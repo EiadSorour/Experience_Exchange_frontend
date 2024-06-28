@@ -1,10 +1,9 @@
 import React from "react";
+import RegisterPage from "./pages/Register";
 
 function App() {
   return (
-    <div className="App">
-      <p>Hello from React !!</p>
-    </div>
+    <RegisterPage />
   );
 }
 
