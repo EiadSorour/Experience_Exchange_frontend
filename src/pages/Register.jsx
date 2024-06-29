@@ -1,6 +1,28 @@
 import React from "react";
 
 function RegisterPage(){
+    
+    const [userData, setUserData] = React.useState(
+        {
+            username: "",
+            password: "",
+            confirmPassword: "",
+            profession: ""
+        }
+    );
+
+    function onChange(event) {
+        const changeName = event.target.id;
+        setUserData((prev)=>{
+            return(
+                {
+                    ...prev,
+                    [changeName]: event.target.value
+                }
+            )
+        })
+    }
+
     return (
         <main className="form-signin m-auto position-absolute top-50 start-50 translate-middle">
             <form className="container text-center">
@@ -10,22 +32,22 @@ function RegisterPage(){
 
                 <div className="row mb-2">
                     <div className="form-floating p-0 col">
-                        <input type="text" className="form-control" id="username" placeholder="Username"/>
+                        <input onChange={onChange} type="text" className="form-control" id="username" placeholder="Username"/>
                         <label htmlFor="username">Username</label>
                     </div>
                     <div className="form-floating p-0 col ms-1">
-                        <input type="text" className="form-control" id="profession" placeholder="profession"/>
+                        <input onChange={onChange} type="text" className="form-control" id="profession" placeholder="profession"/>
                         <label htmlFor="profession">Profession</label>
                     </div>
                 </div>
                 <div className="row d-flex">
                     <div className="form-floating p-0 col">
-                        <input type="password" className="form-control" id="password" placeholder="Password"/>
+                        <input onChange={onChange} type="password" className="form-control" id="password" placeholder="Password"/>
                         <label htmlFor="password">Password</label>
                         <button className="bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-1" ><i className="fa-solid fa-eye"></i></button>
                     </div>
                     <div className="form-floating p-0 col ms-1 overflow-hidden">
-                        <input type="password" className="form-control" id="confirmPassword" placeholder="Confirm Password"/>
+                        <input onChange={onChange} type="password" className="form-control" id="confirmPassword" placeholder="Confirm Password"/>
                         <label htmlFor="confirmPassword">Confirm Password</label>
                         <button className="bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-1" ><i className="fa-solid fa-eye"></i></button>
                     </div>
