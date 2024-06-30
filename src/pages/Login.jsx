@@ -1,6 +1,27 @@
 import React from "react";
 
 function LoginPage(){
+
+    const [userData, setUserData] = React.useState(
+        {
+            username: "",
+            password: ""
+        }
+    );
+
+    function handleOnChange(event){
+        const changeName = event.target.id;
+        const currentValue = event.target.value;
+        setUserData((prev)=>{
+            return(
+                {
+                    ...prev,
+                    [changeName]: currentValue
+                }
+            )
+        })
+    }
+
     return (
         <main className="form-signin m-auto position-absolute top-50 start-50 translate-middle">
             <form className="text-center">
@@ -9,12 +30,12 @@ function LoginPage(){
                 <h1 className="h3 mb-3 fw-bold">Login</h1>
 
                 <div className="form-floating p-0 mb-2">
-                    <input type="text" className="form-control" id="username" placeholder="Username"/>
+                    <input onChange={handleOnChange} type="text" className="form-control" id="username" placeholder="Username"/>
                     <label htmlFor="username">Username</label>
                 </div>
                 
                 <div className="form-floating p-0">
-                    <input style={{minWidth: "120px"}} type="password" className="form-control" id="password" placeholder="Password"/>
+                    <input onChange={handleOnChange} style={{minWidth: "120px"}} type="password" className="form-control" id="password" placeholder="Password"/>
                     <label htmlFor="password">Password</label>
                     <button id="btnPassword" className="bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-1" ><i id="passIcon" className="fa-solid fa-eye"></i></button>
                 </div>
