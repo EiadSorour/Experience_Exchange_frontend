@@ -158,7 +158,7 @@ function RegisterPage(){
                     <button className="btn btn-primary fw-bold w-100 py-2 mt-3" type="submit">Sign Up</button>
                 </div>
 
-                <p>Already have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="https://google.com">Login</a></p>
+                <p>Already have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="http://localhost:3000/login">Login</a></p>
             </form>
         </main>
     )
