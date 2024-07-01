@@ -1,7 +1,7 @@
 import React from "react";
 
-function RegisterPage(){
-    
+function RegisterPage(props){
+
     const [userData, setUserData] = React.useState(
         {
             username: "",
