@@ -81,7 +81,6 @@ function RegisterPage(){
     function handleOnClick(event){
         event.preventDefault();
         const clickBtn = event.target.id;
-        console.log(clickBtn);
         if(clickBtn === "btnPassword" || clickBtn === "passIcon"){
             setPasswordTypes((prev)=>{
                 if(prev.passwordType === "password"){
