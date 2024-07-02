@@ -1,6 +1,7 @@
 import React from "react";
+import axios from "axios";
 
-function LoginPage(){
+function LoginPage(probs){
 
     const [userData, setUserData] = React.useState(
         {
@@ -8,6 +9,8 @@ function LoginPage(){
             password: ""
         }
     );
+
+    const [errorMessages, setErrorMessages] = React.useState([]);
 
     const [passwordTypes, setPasswordTypes] = React.useState(
         {
@@ -32,7 +35,6 @@ function LoginPage(){
     function handleOnClick(event){
         event.preventDefault();
         const clickBtn = event.target.id;
-        console.log(clickBtn);
         if(clickBtn === "btnPassword" || clickBtn === "passIcon"){
             setPasswordTypes((prev)=>{
                 if(prev.passwordType === "password"){
@@ -52,10 +54,32 @@ function LoginPage(){
         }
     }
 
+    async function handleOnSubmit(event){
+        event.preventDefault();
+        const url = probs.BACK_URL+"/login";
+        try{
+            const response = await axios.post(url, userData);
+            alert(response.data.data.token);
+        }catch(error){
+            const errorMessage = error.response.data.message;
+            setErrorMessages((prev)=>{
+                if(Array.isArray(errorMessage)){
+                    return errorMessage;
+                }else{
+                    return([errorMessage])
+                }
+            });
+        }
+    }
+
     return (
         <main className="form-signin m-auto position-absolute top-50 start-50 translate-middle">
             <form className="text-center">
-                <p className="m-0" style={{color:"red"}}></p>
+                {errorMessages.map((message)=>{
+                    return (
+                        <p className="m-0" style={{color:"red"}}>{message}</p>
+                    )
+                })}
                 
                 <h1 className="h3 mb-3 fw-bold">Login</h1>
 
@@ -70,9 +94,9 @@ function LoginPage(){
                     <button onClick={handleOnClick} id="btnPassword" className="bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-1" ><i id="passIcon" className={passwordTypes.passIcon}></i></button>
                 </div>
 
-                <button className="btn btn-primary fw-bold w-100 py-2 my-3" type="submit">Login</button>
+                <button onClick={handleOnSubmit} className="btn btn-primary fw-bold w-100 py-2 my-3" type="submit">Login</button>
                 
-                <p>Don't have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="http://localhost:3000">Sign Up</a></p>
+                <p>Don't have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href={probs.FRONT_URL+"/register"}>Sign Up</a></p>
             </form>
         </main>
     )
