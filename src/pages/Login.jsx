@@ -1,7 +1,11 @@
 import React from "react";
 import axios from "axios";
+import {jwtDecode} from "jwt-decode";
+import Cookies from "universal-cookie";
 
 function LoginPage(probs){
+
+    const cookies = new Cookies();
 
     const [userData, setUserData] = React.useState(
         {
@@ -59,7 +63,9 @@ function LoginPage(probs){
         const url = probs.BACK_URL+"/login";
         try{
             const response = await axios.post(url, userData);
-            alert(response.data.data.token);
+            const token = response.data.data.token;
+            const userInfo = jwtDecode(token);
+            cookies.set("jwt_authorization", token , {expires:new Date(userInfo.exp*1000)})
         }catch(error){
             const errorMessage = error.response.data.message;
             setErrorMessages((prev)=>{
