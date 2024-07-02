@@ -1,7 +1,11 @@
 import React from "react";
 import axios from "axios";
+import {jwtDecode} from "jwt-decode";
+import Cookies from "universal-cookie";
 
 function RegisterPage(props){
+
+    const cookies = new Cookies();
 
     const [userData, setUserData] = React.useState(
         {
@@ -121,14 +125,15 @@ function RegisterPage(props){
             try{
                 const response = await axios.post(url , userData, {});
                 const token = response.data.data.token;
-                alert(token);
+                const userInfo = jwtDecode(token);
+                cookies.set("jwt_authorization", token , {expires: new Date(userInfo.exp*1000)});
             }catch(error){
                 const errorMessage = error.response.data.message;
                 setErrorMessages((prev)=>{
                     if(Array.isArray(errorMessage)){
                         return (errorMessage)
                     }else{
-                        return (prev.push(errorMessage))
+                        return ([errorMessage])
                     }
                 })
             }
@@ -138,7 +143,6 @@ function RegisterPage(props){
     return (
         <main className="form-signin m-auto position-absolute top-50 start-50 translate-middle">
             <form className="container text-center ">
-                
                 {errorMessages.map((message)=>{
                     return (
                         <p className="m-0" style={{color:"red"}}>{message}</p>
