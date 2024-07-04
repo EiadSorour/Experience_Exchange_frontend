@@ -1,9 +1,10 @@
 import React from "react";
+import {Link} from "react-router-dom"
 import axios from "axios";
 import {jwtDecode} from "jwt-decode";
 import Cookies from "universal-cookie";
 
-function RegisterPage(props){
+function RegisterPage(){
 
     const cookies = new Cookies();
 
@@ -121,7 +122,7 @@ function RegisterPage(props){
     async function handleOnSubmit(event){
         event.preventDefault();
         if(userData.password === userData.confirmPassword){
-            const url = props.BACK_URL+"/register";
+            const url = process.env.REACT_APP_BACK_URL+"/register";
             try{
                 const response = await axios.post(url , userData, {});
                 const token = response.data.data.token;
@@ -186,7 +187,7 @@ function RegisterPage(props){
                     <button onClick={handleOnSubmit} className="btn btn-primary fw-bold w-100 py-2 mt-3" type="submit">Sign Up</button>
                 </div>
 
-                <p>Already have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="http://localhost:3000/login">Login</a></p>
+                <p>Already have an account? <Link className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" to="/login">Login</Link></p>
             </form>
         </main>
     )
