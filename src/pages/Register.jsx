@@ -125,9 +125,11 @@ function RegisterPage(){
             const url = process.env.REACT_APP_BACK_URL+"/register";
             try{
                 const response = await axios.post(url , userData, {});
-                const token = response.data.data.token;
-                const userInfo = jwtDecode(token);
-                cookies.set("jwt_authorization", token , {expires: new Date(userInfo.exp*1000)});
+                const accessToken = response.data.data.accessToken;
+                const refreshToken = response.data.data.refreshToken;
+                const userInfo = jwtDecode(accessToken);
+                cookies.set("jwt_access_token", accessToken);
+                cookies.set("jwt_refresh_token", refreshToken);
             }catch(error){
                 const errorMessage = error.response.data.message;
                 setErrorMessages((prev)=>{
