@@ -124,12 +124,11 @@ function RegisterPage(){
         if(userData.password === userData.confirmPassword){
             const url = process.env.REACT_APP_BACK_URL+"/register";
             try{
-                const response = await axios.post(url , userData, {});
+                const response = await axios.post(url, userData, {withCredentials:true});
                 const accessToken = response.data.data.accessToken;
-                const refreshToken = response.data.data.refreshToken;
+
                 const userInfo = jwtDecode(accessToken);
-                cookies.set("jwt_access_token", accessToken);
-                cookies.set("jwt_refresh_token", refreshToken);
+                cookies.set("access_token", accessToken);
             }catch(error){
                 const errorMessage = error.response.data.message;
                 setErrorMessages((prev)=>{
