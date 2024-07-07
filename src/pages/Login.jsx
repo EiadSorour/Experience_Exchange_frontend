@@ -1,9 +1,10 @@
 import React from "react";
 import axios from "axios";
+import {Link} from "react-router-dom";
 import {jwtDecode} from "jwt-decode";
 import Cookies from "universal-cookie";
 
-function LoginPage(probs){
+function LoginPage(){
 
     const cookies = new Cookies();
 
@@ -60,12 +61,13 @@ function LoginPage(probs){
 
     async function handleOnSubmit(event){
         event.preventDefault();
-        const url = probs.BACK_URL+"/login";
+        const url = process.env.REACT_APP_BACK_URL+"/login";
         try{
-            const response = await axios.post(url, userData);
-            const token = response.data.data.token;
-            const userInfo = jwtDecode(token);
-            cookies.set("jwt_authorization", token , {expires:new Date(userInfo.exp*1000)})
+            const response = await axios.post(url, userData, {withCredentials:true});
+            const accessToken = response.data.data.accessToken;
+
+            const userInfo = jwtDecode(accessToken);
+            cookies.set("access_token", accessToken);
         }catch(error){
             const errorMessage = error.response.data.message;
             setErrorMessages((prev)=>{
@@ -102,7 +104,7 @@ function LoginPage(probs){
 
                 <button onClick={handleOnSubmit} className="btn btn-primary fw-bold w-100 py-2 my-3" type="submit">Login</button>
                 
-                <p>Don't have an account? <a className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href={probs.FRONT_URL+"/register"}>Sign Up</a></p>
+                <p>Don't have an account? <Link className="link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" to="/register">Sign Up</Link></p>
             </form>
         </main>
     )
