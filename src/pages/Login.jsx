@@ -67,9 +67,9 @@ function LoginPage(){
         try{
             const response = await axios.post(url, userData, {withCredentials:true});
             const accessToken = response.data.data.accessToken;
-
+            cookies.set("access_token", accessToken);
+            
             const userInfo = jwtDecode(accessToken);
-            cookies.set("access_token", accessToken, {path: "/"});            
             userInfo.role === "admin" ? navigate("/admin/options") : navigate("/client/options");
         }catch(error){
             const errorMessage = error.response.data.message;
