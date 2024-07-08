@@ -4,6 +4,8 @@ import {BrowserRouter , Routes, Route} from "react-router-dom"
 import LoginPage from "./pages/Login";
 import AdminOptionsPage from "./pages/AdminOptions";
 import PrivateAdminRoutes from "./utils/PrivateAdminRoutes";
+import PrivateRoutes from "./utils/PrivateRoutes";
+import ClientOptionsPage from "./pages/ClientOptions";
 
 function App() {
 
@@ -14,6 +16,10 @@ function App() {
         <Route path="/register" element={<RegisterPage />}/>
         <Route path="/login" element={<LoginPage />}/>
         
+        <Route element={<PrivateRoutes/>}>
+          <Route path="/client/options" element={<ClientOptionsPage />}/>
+        </Route>
+
         <Route element={<PrivateAdminRoutes/>}>
           <Route path="/admin/options" element={<AdminOptionsPage />}/>
         </Route>
