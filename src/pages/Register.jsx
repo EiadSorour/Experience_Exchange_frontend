@@ -130,7 +130,7 @@ function RegisterPage(){
                 const accessToken = response.data.data.accessToken;
 
                 const userInfo = jwtDecode(accessToken);
-                cookies.set("access_token", accessToken);
+                cookies.set("access_token", accessToken, {path: "/"});
                 navigate("/client/options");
             }catch(error){
                 const errorMessage = error.response.data.message;
