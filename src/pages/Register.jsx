@@ -3,10 +3,12 @@ import {Link} from "react-router-dom"
 import axios from "axios";
 import {jwtDecode} from "jwt-decode";
 import Cookies from "universal-cookie";
+import { useNavigate } from "react-router-dom";
 
 function RegisterPage(){
 
     const cookies = new Cookies();
+    const navigate = useNavigate();
 
     const [userData, setUserData] = React.useState(
         {
@@ -129,6 +131,7 @@ function RegisterPage(){
 
                 const userInfo = jwtDecode(accessToken);
                 cookies.set("access_token", accessToken);
+                navigate("/client/options");
             }catch(error){
                 const errorMessage = error.response.data.message;
                 setErrorMessages((prev)=>{
