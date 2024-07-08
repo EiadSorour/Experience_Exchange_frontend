@@ -1,7 +1,6 @@
 import React from "react";
 import {Link} from "react-router-dom"
 import axios from "axios";
-import {jwtDecode} from "jwt-decode";
 import Cookies from "universal-cookie";
 import { useNavigate } from "react-router-dom";
 
@@ -128,9 +127,8 @@ function RegisterPage(){
             try{
                 const response = await axios.post(url, userData, {withCredentials:true});
                 const accessToken = response.data.data.accessToken;
-
-                const userInfo = jwtDecode(accessToken);
                 cookies.set("access_token", accessToken);
+                
                 navigate("/client/options");
             }catch(error){
                 const errorMessage = error.response.data.message;
