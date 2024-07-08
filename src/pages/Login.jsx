@@ -71,7 +71,7 @@ function LoginPage(){
             const userInfo = jwtDecode(accessToken);
             cookies.set("access_token", accessToken);
             
-            userInfo.role === "admin" ? navigate("/admin/options") : navigate("/client/options");
+            userInfo.role === "admin" ? navigate("/admin/options", {state: userInfo}) : navigate("/client/options", {state: userInfo});
         }catch(error){
             const errorMessage = error.response.data.message;
             setErrorMessages((prev)=>{
