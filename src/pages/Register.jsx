@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 function RegisterPage(){
 
-    const cookies = new Cookies();
+    const cookies = new Cookies("",{path: "/"});
     const navigate = useNavigate();
 
     const [userData, setUserData] = React.useState(
