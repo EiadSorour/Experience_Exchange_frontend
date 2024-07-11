@@ -705,31 +705,37 @@ const fakeUsers = [
 
 function UsersPage() {
 
-    const [users, setUsers] = React.useState([]);
-
     const paginationLimit = 5;
     const usersCount = fakeUsers.length;
+    const maxPageNumber = Math.ceil(usersCount/paginationLimit);
+
+    const [users, setUsers] = React.useState([]);
+    const[currentPage , setCurrentPage] = React.useState(1);
+
+    React.useEffect(()=>{
+        setUsers(paginationDemo(5,1));
+    }, [])
 
     function paginationDemo(limit , offset){
         var users = [];
-        for(var i = (limit*offset) ; i < (limit*(offset+1)); i++){
+        for(var i = (limit*(offset-1)) ; i < (limit*(offset)); i++){
             users.push(fakeUsers[i]);
         }
         return users;
     }
 
-    React.useEffect(()=>{
-        setUsers(paginationDemo(5,0));
-    }, [])
-
-    const paginationTabs = ()=>{
-        const tabs = [];
-        const numberOfTabs = usersCount/paginationLimit;
-        tabs.push(<li class="page-item"><a class="page-link text-bg-primary" href="#">1</a></li>);
-        for(var i = 2; i <= numberOfTabs; i++){
-            tabs.push(<li class="page-item"><a class="page-link" href="#">{i}</a></li>);
+    function handleOnNextPage(){
+        if(currentPage !== maxPageNumber){
+            setUsers(paginationDemo(paginationLimit , (currentPage+1)));
+            setCurrentPage(currentPage+1);
         }
-        return tabs;
+    }
+
+    function handleOnPreviousePage(){
+        if(currentPage !== 1){
+            setUsers(paginationDemo(paginationLimit , (currentPage-1)));
+            setCurrentPage(currentPage-1);
+        }
     }
 
     return (
@@ -787,7 +793,17 @@ function UsersPage() {
         <div className="position-relative">
             <nav aria-label="Page navigation example" className="position-absolute mt-3 top-50 start-50 translate-middle">
                 <ul className="pagination">
-                    {paginationTabs()}
+                    <li onClick={handleOnPreviousePage} class="page-item">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item"><a class="page-link" href="#">{currentPage}</a></li>
+                    <li onClick={handleOnNextPage} class="page-item">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
