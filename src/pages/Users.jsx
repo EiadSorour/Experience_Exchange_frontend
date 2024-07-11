@@ -1,4 +1,5 @@
 import React from "react";
+import {Link} from "react-router-dom";
 
 const fakeUsers = [
         {
@@ -808,7 +809,7 @@ function UsersPage() {
             </nav>
         </div>
         
-        <button className="btn btn-primary position-absolute top-100 start-0 mt-5">Back</button>
+        <Link to={"/admin/options"} className="btn btn-primary position-absolute top-100 start-0 mt-5">Back</Link>
     </div>
     );
 }
