@@ -707,6 +707,9 @@ function UsersPage() {
 
     const [users, setUsers] = React.useState([]);
 
+    const paginationLimit = 5;
+    const usersCount = fakeUsers.length;
+
     function paginationDemo(limit , offset){
         var users = [];
         for(var i = (limit*offset) ; i < (limit*(offset+1)); i++){
@@ -718,6 +721,16 @@ function UsersPage() {
     React.useEffect(()=>{
         setUsers(paginationDemo(5,0));
     }, [])
+
+    const paginationTabs = ()=>{
+        const tabs = [];
+        const numberOfTabs = usersCount/paginationLimit;
+        tabs.push(<li class="page-item"><a class="page-link text-bg-primary" href="#">1</a></li>);
+        for(var i = 2; i <= numberOfTabs; i++){
+            tabs.push(<li class="page-item"><a class="page-link" href="#">{i}</a></li>);
+        }
+        return tabs;
+    }
 
     return (
     <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
@@ -774,9 +787,7 @@ function UsersPage() {
         <div className="position-relative">
             <nav aria-label="Page navigation example" className="position-absolute mt-3 top-50 start-50 translate-middle">
                 <ul className="pagination">
-                    <li class="page-item"><a class="page-link text-bg-primary" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    {paginationTabs()}
                 </ul>
             </nav>
         </div>
