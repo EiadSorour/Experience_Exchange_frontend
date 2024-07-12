@@ -13,6 +13,7 @@ function UsersPage() {
     const [users, setUsers] = React.useState([]);
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
     const [currentPage , setCurrentPage] = React.useState(1);
+    const [searchText, setSearchText] = React.useState("");
     const [radioStates , setRadioStates] = React.useState({
         id: "",
         username: "checked"
@@ -80,6 +81,11 @@ function UsersPage() {
         }
     }
 
+    function handleOnSearchChange(event){
+        const text = event.target.value;
+        setSearchText(text);
+    }
+
     if(users){
         return(
             <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
@@ -98,7 +104,7 @@ function UsersPage() {
             </div>
 
             <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
-                <input style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
+                <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
                 <button class="btn btn-primary ms-2">Search</button>
                 <button class="btn btn-secondary ms-2">Reset</button>
             </div>
