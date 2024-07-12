@@ -12,7 +12,11 @@ function UsersPage() {
     
     const [users, setUsers] = React.useState([]);
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
-    const[currentPage , setCurrentPage] = React.useState(1);
+    const [currentPage , setCurrentPage] = React.useState(1);
+    const [radioStates , setRadioStates] = React.useState({
+        id: "",
+        username: "checked"
+    });
     
     React.useEffect(()=>{
         const prepareUsers = async ()=>{
@@ -30,7 +34,22 @@ function UsersPage() {
         prepareUsers();
     }, [])
 
-    async function handleOnNextPage(){
+    function handleIdRadio(){
+        setRadioStates({
+            id: "checked",
+            username: ""
+        })
+    }
+
+    function handleUsernameRadio(){
+        setRadioStates({
+            id: "",
+            username: "checked"
+        })
+    }
+
+    async function handleOnNextPage(event){
+        event.preventDefault();
         if(currentPage !== maxPageNumber){
             try{
                 const url = process.env.REACT_APP_BACK_URL+"/users";
@@ -45,7 +64,8 @@ function UsersPage() {
         }
     }
 
-    async function handleOnPreviousePage(){
+    async function handleOnPreviousePage(event){
+        event.preventDefault();
         if(currentPage !== 1){
             try{
                 const url = process.env.REACT_APP_BACK_URL+"/users";
@@ -68,12 +88,12 @@ function UsersPage() {
             
             <div>
                 <div className="text-start form-check form-check-inline">
-                    <input className="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1"/>
-                    <label className="form-check-label" for="inlineRadio1">userID</label>
+                    <input onClick={handleIdRadio} checked={radioStates.id} className="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1"/>
+                    <label onClick={handleIdRadio} className="form-check-label" for="inlineRadio1">userID</label>
                 </div>
                 <div className="text-start form-check form-check-inline">
-                    <input checked className="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2"/>
-                    <label className="form-check-label" for="inlineRadio2">username</label>
+                    <input onClick={handleUsernameRadio} checked={radioStates.username} className="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2"/>
+                    <label onClick={handleUsernameRadio} className="form-check-label" for="inlineRadio2">username</label>
                 </div>
             </div>
 
