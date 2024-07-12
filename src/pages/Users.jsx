@@ -138,6 +138,10 @@ function UsersPage() {
         setSearchText(text);
     }
 
+    function handleOnReset(){
+        window.location.reload();
+    }
+
     if(users){
         return(
             <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
@@ -158,7 +162,7 @@ function UsersPage() {
             <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
                 <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
                 <button onClick={handleSearch} class="btn btn-primary ms-2">Search</button>
-                <button class="btn btn-secondary ms-2">Reset</button>
+                <button onClick={handleOnReset} class="btn btn-secondary ms-2">Reset</button>
             </div>
 
 
