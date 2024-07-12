@@ -1,40 +1,62 @@
 import React from "react";
 import {Link} from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import Cookies from "universal-cookie";
 
 function UsersPage() {
-
+    
     const pageLimit = 5;
-
+    const cookies = new Cookies();
+    const navigate = useNavigate();
+    
     const [users, setUsers] = React.useState([]);
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
     const[currentPage , setCurrentPage] = React.useState(1);
-
+    
     React.useEffect(()=>{
         const prepareUsers = async ()=>{
-            const url = process.env.REACT_APP_BACK_URL+"/users";
-            const response = await axios.get(url , {params: {limit:pageLimit , page:currentPage} ,withCredentials:true});
-            setUsers(response.data.data.users);
-            SetMaxPageNumber(Math.ceil(response.data.data.count/pageLimit));
+            try{
+                const url = process.env.REACT_APP_BACK_URL+"/users";
+                const response = await axios.get(url , {params: {limit:pageLimit , page:currentPage} ,withCredentials:true});
+                setUsers(response.data.data.users);
+                SetMaxPageNumber(Math.ceil(response.data.data.count/pageLimit));
+            }catch(error){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }
         }
         prepareUsers();
     }, [])
 
     async function handleOnNextPage(){
         if(currentPage !== maxPageNumber){
-            const url = process.env.REACT_APP_BACK_URL+"/users";
-            const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1)} ,withCredentials:true});
-            setUsers(response.data.data.users);
-            setCurrentPage(currentPage+1);
+            try{
+                const url = process.env.REACT_APP_BACK_URL+"/users";
+                const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1)} ,withCredentials:true});
+                setUsers(response.data.data.users);
+                setCurrentPage(currentPage+1);
+            }catch(error){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }
         }
     }
 
     async function handleOnPreviousePage(){
         if(currentPage !== 1){
-            const url = process.env.REACT_APP_BACK_URL+"/users";
-            const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1)} ,withCredentials:true});
-            setUsers(response.data.data.users);
-            setCurrentPage(currentPage-1);
+            try{
+                const url = process.env.REACT_APP_BACK_URL+"/users";
+                const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1)} ,withCredentials:true});
+                setUsers(response.data.data.users);
+                setCurrentPage(currentPage-1);
+            }catch(error){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }
         }
     }
 
