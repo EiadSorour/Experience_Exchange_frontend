@@ -14,6 +14,9 @@ function UsersPage() {
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
     const [currentPage , setCurrentPage] = React.useState(1);
     const [searchText, setSearchText] = React.useState("");
+    const [searchingByUsername, setSearchingByUsername] = React.useState(false);
+    const [searchingById , setSearchingById] = React.useState(false);
+    const [urlSearchText, setUrlSearchText] = React.useState("");
     const [radioStates , setRadioStates] = React.useState({
         id: "",
         username: "checked"
@@ -51,10 +54,21 @@ function UsersPage() {
 
     async function handleOnNextPage(event){
         event.preventDefault();
+        var url;
+        var response;
         if(currentPage !== maxPageNumber){
             try{
-                const url = process.env.REACT_APP_BACK_URL+"/users";
-                const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1)} ,withCredentials:true});
+                if(searchingByUsername){
+                    url = process.env.REACT_APP_BACK_URL+"/users/username";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1), username:urlSearchText} ,withCredentials:true});
+                }else if(searchingById){
+                    url = process.env.REACT_APP_BACK_URL+"/users/id";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1), id:urlSearchText} ,withCredentials:true});
+                }else{
+                    console.log("here");
+                    url = process.env.REACT_APP_BACK_URL+"/users";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1)} ,withCredentials:true});
+                }
                 setUsers(response.data.data.users);
                 setCurrentPage(currentPage+1);
             }catch(error){
@@ -67,10 +81,23 @@ function UsersPage() {
 
     async function handleOnPreviousePage(event){
         event.preventDefault();
+        var url;
+        var response;
         if(currentPage !== 1){
             try{
-                const url = process.env.REACT_APP_BACK_URL+"/users";
-                const response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1)} ,withCredentials:true});
+                console.log("id" , searchingById);
+                console.log("name" , searchingByUsername);
+                if(searchingByUsername){
+                    url = process.env.REACT_APP_BACK_URL+"/users/username";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1), username:urlSearchText} ,withCredentials:true});
+                }else if(searchingById){
+                    url = process.env.REACT_APP_BACK_URL+"/users/id";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1), id:urlSearchText} ,withCredentials:true});
+                }else{
+                    console.log("here");
+                    url = process.env.REACT_APP_BACK_URL+"/users";
+                    response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1)} ,withCredentials:true});
+                }
                 setUsers(response.data.data.users);
                 setCurrentPage(currentPage-1);
             }catch(error){
@@ -78,6 +105,31 @@ function UsersPage() {
                 await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
                 navigate("/login");
             }
+        }
+    }
+
+    async function handleSearch(){
+        setUrlSearchText(searchText);
+        if(radioStates.id === "checked"){
+            const url = process.env.REACT_APP_BACK_URL+"/users/id";
+            const response = await axios.get(url, {params: {limit:pageLimit , page:1, id:searchText},withCredentials: true});
+            console.log(response);
+            const user = response.data.data.user;
+            setSearchingByUsername(false);
+            setSearchingById(true);
+            setCurrentPage(1);
+            setUsers([user]);
+            SetMaxPageNumber(1);
+        }else{
+            const url = process.env.REACT_APP_BACK_URL+"/users/username";
+            const response = await axios.get(url, {params: {limit:pageLimit , page:1, username:searchText},withCredentials: true});
+            const users = response.data.data.users;
+            const count = response.data.data.count;
+            setSearchingByUsername(true);
+            setSearchingById(false);
+            setCurrentPage(1);
+            setUsers(users);
+            SetMaxPageNumber(Math.ceil(count/pageLimit) || 1);
         }
     }
 
@@ -105,7 +157,7 @@ function UsersPage() {
 
             <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
                 <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
-                <button class="btn btn-primary ms-2">Search</button>
+                <button onClick={handleSearch} class="btn btn-primary ms-2">Search</button>
                 <button class="btn btn-secondary ms-2">Reset</button>
             </div>
 
