@@ -157,8 +157,25 @@ function UsersPage() {
         const user = args[0];
     }
 
-    async function addRemoveAdmin(args){
+    async function addRemoveAdmin(args, event){
+        event.preventDefault();
         const user = args[0];
+        const url = process.env.REACT_APP_BACK_URL+"/users/admin";
+        const response = await axios.patch(url, {} ,{params: {id:user.userID},withCredentials: true});
+        const newUser = response.data.data.user;
+        
+        const buttonID = event.target.id;
+        const btn = document.getElementById(buttonID);
+
+        if(newUser.role === "client"){
+            btn.classList.remove(["btn-danger"]);
+            btn.classList.add(["btn-success"]);
+            btn.textContent = "Make Admin";
+        }else{
+            btn.classList.remove(["btn-success"]);
+            btn.classList.add(["btn-danger"]);
+            btn.textContent = "Remove Admin";
+        }
     }
 
     function handleOnSearchChange(event){
