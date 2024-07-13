@@ -94,7 +94,6 @@ function UsersPage() {
                     url = process.env.REACT_APP_BACK_URL+"/users/id";
                     response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1), id:urlSearchText} ,withCredentials:true});
                 }else{
-                    console.log("here");
                     url = process.env.REACT_APP_BACK_URL+"/users";
                     response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1)} ,withCredentials:true});
                 }
@@ -131,6 +130,35 @@ function UsersPage() {
             setUsers(users);
             SetMaxPageNumber(Math.ceil(count/pageLimit) || 1);
         }
+    }
+
+    async function blockUnblock(args , event){
+        event.preventDefault();
+        const user = args[0];
+        const url = process.env.REACT_APP_BACK_URL+"/users/block";
+        const response = await axios.patch(url, {} ,{params: {id:user.userID},withCredentials: true});
+        const newUser = response.data.data.user;
+        
+        const buttonID = event.target.id;
+        const btn = document.getElementById(buttonID);
+
+        if(newUser.isBlocked){
+            btn.classList.remove(["btn-danger"]);
+            btn.classList.add(["btn-success"]);
+            btn.textContent = "unblock";
+        }else{
+            btn.classList.remove(["btn-success"]);
+            btn.classList.add(["btn-danger"]);
+            btn.textContent = "block";
+        }
+    }
+    
+    async function deleteUser(args){
+        const user = args[0];
+    }
+
+    async function addRemoveAdmin(args){
+        const user = args[0];
     }
 
     function handleOnSearchChange(event){
@@ -179,16 +207,16 @@ function UsersPage() {
                     </tr>
                 </thead>
                 <tbody>
-                    {users.map((user)=>{
+                    {users.map((user, index)=>{
                         return (
                             <tr>
                                 <td>{user.userID}</td>
                                 <td>{user.username}</td>
                                 <td>{user.profession}</td>
                                 <td>{user.role}</td>
-                                <td><button className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
-                                <td><button className="btn btn-danger">Delete</button></td>
-                                <td><button className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
+                                <td><button id={`block_${index}`} onClick={blockUnblock.bind(this , [user])} className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
+                                <td><button id={`delete_${index}`} onClick={deleteUser.bind(this,[user])} className="btn btn-danger">Delete</button></td>
+                                <td><button id={`admin_${index}`} onClick={addRemoveAdmin.bind(this,[user])} className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
                             </tr>
                         )
                     })}
