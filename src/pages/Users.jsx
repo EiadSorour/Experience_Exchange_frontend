@@ -153,8 +153,19 @@ function UsersPage() {
         }
     }
     
-    async function deleteUser(args){
+    async function deleteUser(args, event){
+        event.preventDefault();
+
         const user = args[0];
+        const url = process.env.REACT_APP_BACK_URL+"/users";
+        await axios.delete(url , {params: {id:user.userID} , withCredentials:true});
+
+        const buttonID = event.target.id;
+        const btn = document.getElementById(buttonID);
+
+        btn.parentNode.parentNode.childNodes.forEach(child => {
+            child.lastChild.disabled = true;
+        });
     }
 
     async function addRemoveAdmin(args, event){
@@ -231,9 +242,9 @@ function UsersPage() {
                                 <td>{user.username}</td>
                                 <td>{user.profession}</td>
                                 <td>{user.role}</td>
-                                <td><button id={`block_${index}`} onClick={blockUnblock.bind(this , [user])} className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
-                                <td><button id={`delete_${index}`} onClick={deleteUser.bind(this,[user])} className="btn btn-danger">Delete</button></td>
-                                <td><button id={`admin_${index}`} onClick={addRemoveAdmin.bind(this,[user])} className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
+                                <td name="button"><button id={`block_${index}`} onClick={blockUnblock.bind(this , [user])} className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
+                                <td name="button"><button id={`delete_${index}`} onClick={deleteUser.bind(this,[user])} className="btn btn-danger">Delete</button></td>
+                                <td name="button"><button id={`admin_${index}`} onClick={addRemoveAdmin.bind(this,[user])} className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
                             </tr>
                         )
                     })}
