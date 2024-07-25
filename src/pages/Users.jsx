@@ -6,9 +6,12 @@ import Cookies from "universal-cookie";
 
 function UsersPage() {
     
+    const confirmationDiv = document.getElementById("confirmation");
+    
     const pageLimit = 5;
     const cookies = new Cookies();
     const navigate = useNavigate();
+    
     
     const [users, setUsers] = React.useState([]);
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
@@ -20,6 +23,12 @@ function UsersPage() {
     const [radioStates , setRadioStates] = React.useState({
         id: "",
         username: "checked"
+    });
+    const [confirmText , setConfirmText] = React.useState("");
+    const [confirmEvent, setConfirmEvent] = React.useState();
+    const [confirmUser, setConfirmUser] = React.useState({
+        username: "",
+        id: ""
     });
     
     React.useEffect(()=>{
@@ -132,11 +141,53 @@ function UsersPage() {
         }
     }
 
-    async function blockUnblock(args , event){
+    function showConfirmation(args, event){
         event.preventDefault();
+        const btnText = event.target.textContent;
         const user = args[0];
+        setConfirmEvent(event);
+        setConfirmText(btnText);
+        setConfirmUser({
+            username: user.username,
+            id: user.userID
+        });
+        confirmationDiv.hidden = false;
+    }
+
+    async function handleCurrentOperation(event){
+        event.preventDefault();
+        const operationText = event.target.textContent;
+        const userID = confirmUser.id;
+        const ce = confirmEvent;
+        if(operationText === "Confirm"){
+            if(confirmText === "Block" || confirmText === "unblock"){
+                await blockUnblock(userID , ce);
+            }else if(confirmText === "Delete"){
+                await deleteUser(userID , ce);
+            }else{
+                await addRemoveAdmin(userID , ce);
+            }
+            setConfirmEvent(null);
+            setConfirmText("");
+            setConfirmUser({
+                username:"",
+                id:""
+            });
+            confirmationDiv.hidden = true;
+        }else{
+            setConfirmEvent(null);
+            setConfirmText("");
+            setConfirmUser({
+                username:"",
+                id:""
+            });
+            confirmationDiv.hidden = true;
+        }
+    }
+
+    async function blockUnblock(userID, event){
         const url = process.env.REACT_APP_BACK_URL+"/users/block";
-        const response = await axios.patch(url, {} ,{params: {id:user.userID},withCredentials: true});
+        const response = await axios.patch(url, {} ,{params: {id:userID},withCredentials: true});
         const newUser = response.data.data.user;
         
         const buttonID = event.target.id;
@@ -149,16 +200,14 @@ function UsersPage() {
         }else{
             btn.classList.remove(["btn-success"]);
             btn.classList.add(["btn-danger"]);
-            btn.textContent = "block";
+            btn.textContent = "Block";
         }
     }
     
-    async function deleteUser(args, event){
-        event.preventDefault();
+    async function deleteUser(userID, event){
 
-        const user = args[0];
         const url = process.env.REACT_APP_BACK_URL+"/users";
-        await axios.delete(url , {params: {id:user.userID} , withCredentials:true});
+        await axios.delete(url , {params: {id:userID} , withCredentials:true});
 
         const buttonID = event.target.id;
         const btn = document.getElementById(buttonID);
@@ -168,11 +217,9 @@ function UsersPage() {
         });
     }
 
-    async function addRemoveAdmin(args, event){
-        event.preventDefault();
-        const user = args[0];
+    async function addRemoveAdmin(userID, event){
         const url = process.env.REACT_APP_BACK_URL+"/users/admin";
-        const response = await axios.patch(url, {} ,{params: {id:user.userID},withCredentials: true});
+        const response = await axios.patch(url, {} ,{params: {id:userID},withCredentials: true});
         const newUser = response.data.data.user;
         
         const buttonID = event.target.id;
@@ -221,7 +268,6 @@ function UsersPage() {
                 <button onClick={handleOnReset} class="btn btn-secondary ms-2">Reset</button>
             </div>
 
-
             <table class="table table-bordered table-striped">
                 <thead className="table-secondary">
                     <tr>
@@ -242,14 +288,22 @@ function UsersPage() {
                                 <td>{user.username}</td>
                                 <td>{user.profession}</td>
                                 <td>{user.role}</td>
-                                <td name="button"><button id={`block_${index}`} onClick={blockUnblock.bind(this , [user])} className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
-                                <td name="button"><button id={`delete_${index}`} onClick={deleteUser.bind(this,[user])} className="btn btn-danger">Delete</button></td>
-                                <td name="button"><button id={`admin_${index}`} onClick={addRemoveAdmin.bind(this,[user])} className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
+                                <td name="button"><button id={`block_${index}`} onClick={showConfirmation.bind(this , [user])} className={user.isBlocked === false? "btn btn-danger":"btn btn-success"}>{user.isBlocked === true? "unblock": "Block"}</button></td>
+                                <td name="button"><button id={`delete_${index}`} onClick={showConfirmation.bind(this,[user])} className="btn btn-danger">Delete</button></td>
+                                <td name="button"><button id={`admin_${index}`} onClick={showConfirmation.bind(this,[user])} className={user.role === "admin"? "btn btn-danger":"btn btn-success"}>{user.role === "admin"? "Remove Admin":"Make Admin"}</button></td>
                             </tr>
                         )
                     })}
                 </tbody>
             </table>
+
+            <div id="confirmation" hidden>
+                <p>
+                    {confirmText} user "{confirmUser.username}"?
+                    <button onClick={handleCurrentOperation} className="btn btn-success ms-2">Confirm</button>
+                    <button onClick={handleCurrentOperation} className="btn btn-danger ms-2">Cancel</button>
+                </p>
+            </div>
 
             <div className="position-relative">
                 <nav aria-label="Page navigation example" className="position-absolute mt-3 top-50 start-50 translate-middle">
