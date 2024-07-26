@@ -7,6 +7,7 @@ import Cookies from "universal-cookie";
 function UsersPage() {
     
     const confirmationDiv = document.getElementById("confirmation");
+    const tbody = document.getElementById("tbody");
     
     const pageLimit = 5;
     const cookies = new Cookies();
@@ -63,6 +64,11 @@ function UsersPage() {
 
     async function handleOnNextPage(event){
         event.preventDefault();
+        tbody.childNodes.forEach(child => {
+            child.childNodes[4].childNodes[0].disabled = false;
+            child.childNodes[5].childNodes[0].disabled = false;
+            child.childNodes[6].childNodes[0].disabled = false;
+        });
         var url;
         var response;
         if(currentPage !== maxPageNumber){
@@ -74,7 +80,6 @@ function UsersPage() {
                     url = process.env.REACT_APP_BACK_URL+"/users/id";
                     response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1), id:urlSearchText} ,withCredentials:true});
                 }else{
-                    console.log("here");
                     url = process.env.REACT_APP_BACK_URL+"/users";
                     response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage+1)} ,withCredentials:true});
                 }
@@ -90,12 +95,15 @@ function UsersPage() {
 
     async function handleOnPreviousePage(event){
         event.preventDefault();
+        tbody.childNodes.forEach(child => {
+            child.childNodes[4].childNodes[0].disabled = false;
+            child.childNodes[5].childNodes[0].disabled = false;
+            child.childNodes[6].childNodes[0].disabled = false;
+        });
         var url;
         var response;
         if(currentPage !== 1){
             try{
-                console.log("id" , searchingById);
-                console.log("name" , searchingByUsername);
                 if(searchingByUsername){
                     url = process.env.REACT_APP_BACK_URL+"/users/username";
                     response = await axios.get(url , {params: {limit:pageLimit , page:(currentPage-1), username:urlSearchText} ,withCredentials:true});
@@ -118,6 +126,15 @@ function UsersPage() {
 
     async function handleSearch(){
         setUrlSearchText(searchText);
+        
+        setConfirmEvent(null);
+            setConfirmText("");
+            setConfirmUser({
+                username:"",
+                id:""
+            });
+        confirmationDiv.hidden = true;
+        
         if(radioStates.id === "checked"){
             const url = process.env.REACT_APP_BACK_URL+"/users/id";
             const response = await axios.get(url, {params: {limit:pageLimit , page:1, id:searchText},withCredentials: true});
@@ -280,7 +297,7 @@ function UsersPage() {
                         <th scope="col"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbody">
                     {users.map((user, index)=>{
                         return (
                             <tr>
