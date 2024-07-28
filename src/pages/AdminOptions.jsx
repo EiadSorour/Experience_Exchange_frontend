@@ -26,11 +26,16 @@ function AdminOptionsPage(){
         navigate("/users");
     }
 
+    async function handleRoomsClick(event){
+        event.preventDefault();
+        navigate("/rooms/history");
+    }
+
     return (
         <div class="text-center d-grid gap-2 col-3 mx-auto position-absolute top-50 start-50 translate-middle">
             <h3>Welcome, <span className="text-decoration-underline fw-bold ">{user.username}</span></h3>
             <button onClick={handleUsersClick} class="btn btn-primary" type="button">Users</button>
-            <button class="btn btn-primary" type="button">Rooms Hirstory</button>
+            <button onClick={handleRoomsClick} class="btn btn-primary" type="button">Rooms Hirstory</button>
             <a onClick={handleOnLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
         </div>
     )
