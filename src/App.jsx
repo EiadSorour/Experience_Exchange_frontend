@@ -7,6 +7,7 @@ import PrivateAdminRoutes from "./utils/PrivateAdminRoutes";
 import PrivateRoutes from "./utils/PrivateRoutes";
 import ClientOptionsPage from "./pages/ClientOptions";
 import UsersPage from "./pages/Users";
+import RoomsHistoryPage from "./pages/RoomsHistory";
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
         <Route element={<PrivateAdminRoutes/>}>
           <Route path="/admin/options" element={<AdminOptionsPage />}/>
           <Route path="/users" element={<UsersPage />}/>
+          <Route path="/rooms/history" element={<RoomsHistoryPage />}/>
         </Route>
 
         <Route path="*" element={<h1>Not found</h1>}/>
