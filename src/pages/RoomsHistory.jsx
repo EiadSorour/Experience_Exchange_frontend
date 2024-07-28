@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 function RoomsHistoryPage(){
 
+    const [searchText, setSearchText] = React.useState("");
     const [radioStates , setRadioStates] = React.useState({
         roomID: "",
         creatorID: "",
@@ -19,6 +20,15 @@ function RoomsHistoryPage(){
             topic: "",
             [id]: "checked"
         });
+    }
+
+    function handleOnSearchChange(event){
+        const text = event.target.value;
+        setSearchText(text);
+    }
+
+    function handleOnReset(){
+        window.location.reload();
     }
 
     return (
@@ -46,9 +56,9 @@ function RoomsHistoryPage(){
             </div>
 
             <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
-                <input  style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
+                <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search"/>
                 <button class="btn btn-primary ms-2">Search</button>
-                <button class="btn btn-secondary ms-2">Reset</button>
+                <button onClick={handleOnReset} class="btn btn-secondary ms-2">Reset</button>
             </div>
             
             <Link to={"/admin/options"} className="btn btn-primary position-absolute top-100 start-0 mt-5">Back</Link>
