@@ -13,7 +13,8 @@ function RoomsHistoryPage(){
 
     const [rooms, setRooms] = React.useState([]);
     const [searchText, setSearchText] = React.useState("");
-    const [radioState , setRadioState] = React.useState("");
+    const [radioState , setRadioState] = React.useState("topic");
+    const [joinedUsers, setJoinedUsers] = React.useState([]);
     const [currentPage , setCurrentPage] = React.useState(1);
     const [maxPageNumber, SetMaxPageNumber] = React.useState(0);
 
@@ -65,34 +66,43 @@ function RoomsHistoryPage(){
         console.log(response);
     }
 
+    async function getUsersJoined(args, event){
+        event.preventDefault();
+        const roomID = args[0];
+        const url = process.env.REACT_APP_BACK_URL;
+        const response = await axios.get(url+"/user-rooms", {params: {roomID:roomID}, withCredentials: true});
+        const users = response.data.data.users;
+        setJoinedUsers(users);
+    }
+
     function handleOnReset(){
         window.location.reload();
     }
-
+    
     if(rooms){
         return (
-            <div className="container text-center mx-auto position-absolute top-50 start-50 translate-middle">
+            <div className="container p-0 text-center mx-auto position-absolute top-50 start-50 translate-middle">
             
                 <div className="row">
-                    <h6>Search by:</h6>
+                    <h6 className="col-12">Search by:</h6>
                 </div>
                 
                 <div className="row mb-2 justify-content-center">
                     <div>
                         <div className="text-start form-check form-check-inline">
-                            <input  onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="roomID" value="option1"/>
+                            <input checked={radioState === "roomID"? "checked": ""} onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="roomID" value="option1"/>
                             <label className="form-check-label" for="roomID">roomID</label>
                         </div>
                         <div className="text-start form-check form-check-inline col">
-                            <input onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="creatorID" value="option2"/>
+                            <input checked={radioState === "creatorID"? "checked": ""} onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="creatorID" value="option2"/>
                             <label className="form-check-label" for="creatorID">creatorID</label>
                         </div>
                         <div className="text-start form-check form-check-inline col">
-                            <input onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="creatorUsername" value="option3"/>
+                            <input checked={radioState === "creatorUsername"? "checked": ""} onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="creatorUsername" value="option3"/>
                             <label className="form-check-label" for="creatorUsername">creator username</label>
                         </div>
                         <div className="text-start form-check form-check-inline col">
-                            <input onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="topic" value="option4"/>
+                            <input checked={radioState === "topic"? "checked": ""} onClick={handleOnRadioChange} className="form-check-input" type="radio" name="inlineRadioOptions" id="topic" value="option4"/>
                             <label className="form-check-label" for="topic" >Topic</label>
                         </div>
                     </div>
@@ -101,9 +111,9 @@ function RoomsHistoryPage(){
 
 
                 <div className="row mb-4 justify-content-center">
-                    <input onChange={handleOnSearchChange} style={{maxWidth:"500px"}} type="text" class="form-control col" placeholder="Search"/>
-                    <button onClick={handleOnSearch} class="btn btn-primary ms-2 col-sm-1">Search</button>
-                    <button onClick={handleOnReset} class="btn btn-secondary ms-2 col-sm-1">Reset</button>
+                    <input onChange={handleOnSearchChange} style={{maxWidth:"500px"}} type="text" class="form-control col-10" placeholder="Search"/>
+                    <button onClick={handleOnSearch} class="btn btn-primary ms-2 col-1">Search</button>
+                    <button onClick={handleOnReset} class="btn btn-secondary ms-2 col-1">Reset</button>
                 </div>
 
 
@@ -129,7 +139,7 @@ function RoomsHistoryPage(){
                                             <td>{room.topic}</td>
                                             <td>{room.creatorID}</td>
                                             <td>{room.creatorUsername}</td>
-                                            <td><button className="btn btn-success">Users Joined</button></td>
+                                            <td><button onClick={getUsersJoined.bind(this, [room.roomID])} className="btn btn-success">Users Joined</button></td>
                                         </tr>
                                     )
                                 })}
@@ -153,7 +163,7 @@ function RoomsHistoryPage(){
                         </nav>
                     
                     </div>
-                    <div style={{maxHeight:"450px"}} class="col overflow-auto">
+                    <div style={{maxHeight:"450px"}} class="col-4 overflow-auto">
                         <table  class="table table-bordered table-striped ">
                             <thead className="table-secondary">
                                 <tr>
@@ -162,37 +172,21 @@ function RoomsHistoryPage(){
                                 </tr>
                             </thead>
                             <tbody id="tbody">
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
-                                <tr>
-                                    <td>b5a4c8ee-ef2f-4c98-97ec-3706fc81e843</td>
-                                    <td>Eiad Sorour</td>
-                                </tr>
+                                {joinedUsers.map((joinedUser)=>{
+                                    return(
+                                        <tr>
+                                            <td>{joinedUser.userID}</td>
+                                            <td>{joinedUser.username}</td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
                 <div className="row justify-content-center">
-                    <Link to={"/admin/options"} className="col-sm-1 btn btn-primary">Back</Link>
+                    <Link to={"/admin/options"} className="col-1 btn btn-primary">Back</Link>
                 </div>
             </div>
         );
