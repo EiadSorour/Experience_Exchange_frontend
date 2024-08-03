@@ -146,14 +146,18 @@ function UsersPage() {
                 alert(message);
                 return;
             }
-
-            console.log("okay");
+            
             const user = response.data.data.user;
             setSearchingByUsername(false);
             setSearchingById(true);
             setCurrentPage(1);
-            setUsers([user]);
             SetMaxPageNumber(1);
+            
+            if(user){
+                setUsers([user]);
+            }else{
+                setUsers([]);
+            }
         }else{
             const url = process.env.REACT_APP_BACK_URL+"/users/username";
             const response = await axios.get(url, {params: {limit:pageLimit , page:1, username:searchText},withCredentials: true});
