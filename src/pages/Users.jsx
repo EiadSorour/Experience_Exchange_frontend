@@ -137,8 +137,17 @@ function UsersPage() {
         
         if(radioStates.id === "checked"){
             const url = process.env.REACT_APP_BACK_URL+"/users/id";
-            const response = await axios.get(url, {params: {limit:pageLimit , page:1, id:searchText},withCredentials: true});
-            console.log(response);
+            
+            var response;
+            try{
+                response = await axios.get(url, {params: {limit:pageLimit , page:1, id:searchText},withCredentials: true});
+            }catch(error){
+                const message = error.response.data.message || error.message;
+                alert(message);
+                return;
+            }
+
+            console.log("okay");
             const user = response.data.data.user;
             setSearchingByUsername(false);
             setSearchingById(true);

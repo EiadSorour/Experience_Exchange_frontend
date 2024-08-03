@@ -51,13 +51,32 @@ function RoomsHistoryPage(){
         
         switch(radioState){
             case "roomID":
-                response = await axios.get(url+"/rooms/id", {params: {limit:pageLimit , page:1, roomID:searchText},withCredentials: true});
-                setRooms([response.data.data.room]);
+                try{
+                    response = await axios.get(url+"/rooms/id", {params: {limit:pageLimit , page:1, roomID:searchText},withCredentials: true});
+                }catch(error){
+                    const message = error.response.data.message || error.message;
+                    alert(message);
+                    return;
+                }
+
+                const room = response.data.data.room;
+                if(room.length == 0){
+                    setRooms([]);
+                }else{
+                    setRooms([room]);
+                }
+
                 setCurrentPage(1);
                 SetMaxPageNumber(1);
                 return;
             case "creatorID":
-                response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:1, creatorID:searchText},withCredentials: true});
+                try{
+                    response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:1, creatorID:searchText},withCredentials: true});
+                }catch(error){
+                    const message = error.response.data.message || error.message;
+                    alert(message);
+                    return;
+                }
                 break;
             case "creatorUsername":
                 response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:1, creatorUsername:searchText},withCredentials: true});
