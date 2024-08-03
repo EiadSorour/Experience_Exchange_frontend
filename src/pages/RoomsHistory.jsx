@@ -13,6 +13,7 @@ function RoomsHistoryPage(){
 
     const [rooms, setRooms] = React.useState([]);
     const [searchText, setSearchText] = React.useState("");
+    const [searchingBy , setSearchingBy] = React.useState("");
     const [radioState , setRadioState] = React.useState("topic");
     const [joinedUsers, setJoinedUsers] = React.useState([]);
     const [currentPage , setCurrentPage] = React.useState(1);
@@ -51,7 +52,10 @@ function RoomsHistoryPage(){
         switch(radioState){
             case "roomID":
                 response = await axios.get(url+"/rooms/id", {params: {limit:pageLimit , page:1, roomID:searchText},withCredentials: true});
-                break;
+                setRooms([response.data.data.room]);
+                setCurrentPage(1);
+                SetMaxPageNumber(1);
+                return;
             case "creatorID":
                 response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:1, creatorID:searchText},withCredentials: true});
                 break;
@@ -62,8 +66,13 @@ function RoomsHistoryPage(){
                 response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:1, topic:searchText},withCredentials: true});
                 break;
         }
-
-        console.log(response);
+        
+        const searchedRooms = response.data.data.rooms;
+        const count = response.data.data.count;
+        setSearchingBy(radioState);
+        setRooms(searchedRooms);
+        setCurrentPage(1);
+        SetMaxPageNumber(Math.ceil(count/pageLimit) || 1);
     }
 
     async function getUsersJoined(args, event){
@@ -77,6 +86,58 @@ function RoomsHistoryPage(){
 
     function handleOnReset(){
         window.location.reload();
+    }
+
+    async function handleOnNextPage(event){
+        event.preventDefault();
+        
+        const url = process.env.REACT_APP_BACK_URL;
+        var response;
+        
+        if(currentPage !== maxPageNumber){
+            switch(searchingBy){
+                case "creatorID":
+                    response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage+1), creatorID:searchText},withCredentials: true});
+                    break;
+                case "creatorUsername":
+                    response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+1), creatorUsername:searchText},withCredentials: true});
+                    break;
+                case "topic":
+                    response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
+                    break;
+                default:
+                    response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
+            }
+
+            setRooms(response.data.data.rooms);
+            setCurrentPage(currentPage+1);
+        }
+    }
+
+    async function handleOnPreviousePage(event){
+        event.preventDefault();
+        
+        const url = process.env.REACT_APP_BACK_URL;
+        var response;
+        
+        if(currentPage !== 1){
+            switch(searchingBy){
+                case "creatorID":
+                    response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage-1), creatorID:searchText},withCredentials: true});
+                    break;
+                case "creatorUsername":
+                    response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+-1), creatorUsername:searchText},withCredentials: true});
+                    break;
+                case "topic":
+                    response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
+                    break;
+                default:
+                    response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
+            }
+
+            setRooms(response.data.data.rooms);
+            setCurrentPage(currentPage-1);
+        }
     }
     
     if(rooms){
@@ -148,13 +209,13 @@ function RoomsHistoryPage(){
 
                         <nav aria-label="Page navigation example">
                             <ul className="pagination justify-content-center">
-                                <li class="page-item">
+                                <li onClick={handleOnPreviousePage} class="page-item">
                                     <a class="page-link" href="#" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
-                                <li class="page-item"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item">
+                                <li class="page-item"><a class="page-link" href="#">{currentPage}</a></li>
+                                <li onClick={handleOnNextPage} class="page-item">
                                     <a class="page-link" href="#" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
