@@ -49,41 +49,41 @@ function RoomsHistoryPage(){
         const url = process.env.REACT_APP_BACK_URL;
         var response;
         
-        switch(radioState){
-            case "roomID":
-                try{
+        try{
+            switch(radioState){
+                case "roomID":
                     response = await axios.get(url+"/rooms/id", {params: {limit:pageLimit , page:1, roomID:searchText},withCredentials: true});
-                }catch(error){
-                    const message = error.response.data.message || error.message;
-                    alert(message);
+                    const room = response.data.data.room;
+                    if(room.length == 0){
+                        setRooms([]);
+                    }else{
+                        setRooms([room]);
+                    }
+    
+                    setCurrentPage(1);
+                    SetMaxPageNumber(1);
                     return;
-                }
-
-                const room = response.data.data.room;
-                if(room.length == 0){
-                    setRooms([]);
-                }else{
-                    setRooms([room]);
-                }
-
-                setCurrentPage(1);
-                SetMaxPageNumber(1);
-                return;
-            case "creatorID":
-                try{
+                case "creatorID":
                     response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:1, creatorID:searchText},withCredentials: true});
-                }catch(error){
-                    const message = error.response.data.message || error.message;
-                    alert(message);
-                    return;
-                }
-                break;
-            case "creatorUsername":
-                response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:1, creatorUsername:searchText},withCredentials: true});
-                break;
-            case "topic":
-                response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:1, topic:searchText},withCredentials: true});
-                break;
+                    break;
+                case "creatorUsername":
+                    response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:1, creatorUsername:searchText},withCredentials: true});
+                    break;
+                case "topic":
+                    response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:1, topic:searchText},withCredentials: true});
+                    break;
+            }
+        }catch(error){
+            const message = error.response.data.message || error.message;
+            if(message === "Forbidden resource"){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+                return;
+            }else{
+                alert(message);
+                return;
+            }
         }
         
         const searchedRooms = response.data.data.rooms;
@@ -98,9 +98,20 @@ function RoomsHistoryPage(){
         event.preventDefault();
         const roomID = args[0];
         const url = process.env.REACT_APP_BACK_URL;
-        const response = await axios.get(url+"/user-rooms", {params: {roomID:roomID}, withCredentials: true});
-        const users = response.data.data.users;
-        setJoinedUsers(users);
+        try{
+            const response = await axios.get(url+"/user-rooms", {params: {roomID:roomID}, withCredentials: true});
+            const users = response.data.data.users;
+            setJoinedUsers(users);
+        }catch(error){
+            const errorStatus = error.response.status || 400;
+            if(errorStatus === 403){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }else{
+                alert(error.message);
+            }
+        }
     }
 
     function handleOnReset(){
@@ -113,23 +124,34 @@ function RoomsHistoryPage(){
         const url = process.env.REACT_APP_BACK_URL;
         var response;
         
-        if(currentPage !== maxPageNumber){
-            switch(searchingBy){
-                case "creatorID":
-                    response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage+1), creatorID:searchText},withCredentials: true});
-                    break;
-                case "creatorUsername":
-                    response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+1), creatorUsername:searchText},withCredentials: true});
-                    break;
-                case "topic":
-                    response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
-                    break;
-                default:
-                    response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
+        try{
+            if(currentPage !== maxPageNumber){
+                switch(searchingBy){
+                    case "creatorID":
+                        response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage+1), creatorID:searchText},withCredentials: true});
+                        break;
+                    case "creatorUsername":
+                        response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+1), creatorUsername:searchText},withCredentials: true});
+                        break;
+                    case "topic":
+                        response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
+                        break;
+                    default:
+                        response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage+1), topic:searchText},withCredentials: true});
+                }
+    
+                setRooms(response.data.data.rooms);
+                setCurrentPage(currentPage+1);
             }
-
-            setRooms(response.data.data.rooms);
-            setCurrentPage(currentPage+1);
+        }catch(error){
+            const errorStatus = error.response.status || 400;
+            if(errorStatus === 403){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }else{
+                alert(error.message);
+            }
         }
     }
 
@@ -139,23 +161,34 @@ function RoomsHistoryPage(){
         const url = process.env.REACT_APP_BACK_URL;
         var response;
         
-        if(currentPage !== 1){
-            switch(searchingBy){
-                case "creatorID":
-                    response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage-1), creatorID:searchText},withCredentials: true});
-                    break;
-                case "creatorUsername":
-                    response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+-1), creatorUsername:searchText},withCredentials: true});
-                    break;
-                case "topic":
-                    response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
-                    break;
-                default:
-                    response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
+        try{
+            if(currentPage !== 1){
+                switch(searchingBy){
+                    case "creatorID":
+                        response = await axios.get(url+"/rooms/user/id", {params: {limit:pageLimit , page:(currentPage-1), creatorID:searchText},withCredentials: true});
+                        break;
+                    case "creatorUsername":
+                        response = await axios.get(url+"/rooms/user/username", {params: {limit:pageLimit , page:(currentPage+-1), creatorUsername:searchText},withCredentials: true});
+                        break;
+                    case "topic":
+                        response = await axios.get(url+"/rooms/topic", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
+                        break;
+                    default:
+                        response = await axios.get(url+"/rooms", {params: {limit:pageLimit , page:(currentPage-1), topic:searchText},withCredentials: true});
+                }
+    
+                setRooms(response.data.data.rooms);
+                setCurrentPage(currentPage-1);
             }
-
-            setRooms(response.data.data.rooms);
-            setCurrentPage(currentPage-1);
+        }catch(error){
+            const errorStatus = error.response.status || 400;
+            if(errorStatus === 403){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }else{
+                alert(error.message);
+            }
         }
     }
     
