@@ -143,8 +143,15 @@ function UsersPage() {
                 response = await axios.get(url, {params: {limit:pageLimit , page:1, id:searchText},withCredentials: true});
             }catch(error){
                 const message = error.response.data.message || error.message;
-                alert(message);
-                return;
+                if(message === "Forbidden resource"){
+                    cookies.remove("access_token", {path:"/"});
+                    await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                    navigate("/login");
+                    return;
+                }else{
+                    alert(message);
+                    return;
+                }
             }
             
             const user = response.data.data.user;
@@ -159,15 +166,26 @@ function UsersPage() {
                 setUsers([]);
             }
         }else{
-            const url = process.env.REACT_APP_BACK_URL+"/users/username";
-            const response = await axios.get(url, {params: {limit:pageLimit , page:1, username:searchText},withCredentials: true});
-            const users = response.data.data.users;
-            const count = response.data.data.count;
-            setSearchingByUsername(true);
-            setSearchingById(false);
-            setCurrentPage(1);
-            setUsers(users);
-            SetMaxPageNumber(Math.ceil(count/pageLimit) || 1);
+            try{
+                const url = process.env.REACT_APP_BACK_URL+"/users/username";
+                const response = await axios.get(url, {params: {limit:pageLimit , page:1, username:searchText},withCredentials: true});
+                const users = response.data.data.users;
+                const count = response.data.data.count;
+                setSearchingByUsername(true);
+                setSearchingById(false);
+                setCurrentPage(1);
+                setUsers(users);
+                SetMaxPageNumber(Math.ceil(count/pageLimit) || 1);
+            }catch(error){
+                const errorStatus = error.response.status || 400;
+                if(errorStatus === 403){
+                    cookies.remove("access_token", {path:"/"});
+                    await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                    navigate("/login");
+                }else{
+                    alert(error.message);
+                }
+            }
         }
     }
 
@@ -189,29 +207,40 @@ function UsersPage() {
         const operationText = event.target.textContent;
         const userID = confirmUser.id;
         const ce = confirmEvent;
-        if(operationText === "Confirm"){
-            if(confirmText === "Block" || confirmText === "unblock"){
-                await blockUnblock(userID , ce);
-            }else if(confirmText === "Delete"){
-                await deleteUser(userID , ce);
+        try{
+            if(operationText === "Confirm"){
+                if(confirmText === "Block" || confirmText === "unblock"){
+                    await blockUnblock(userID , ce);
+                }else if(confirmText === "Delete"){
+                    await deleteUser(userID , ce);
+                }else{
+                    await addRemoveAdmin(userID , ce);
+                }
+                setConfirmEvent(null);
+                setConfirmText("");
+                setConfirmUser({
+                    username:"",
+                    id:""
+                });
+                confirmationDiv.hidden = true;
             }else{
-                await addRemoveAdmin(userID , ce);
+                setConfirmEvent(null);
+                setConfirmText("");
+                setConfirmUser({
+                    username:"",
+                    id:""
+                });
+                confirmationDiv.hidden = true;
             }
-            setConfirmEvent(null);
-            setConfirmText("");
-            setConfirmUser({
-                username:"",
-                id:""
-            });
-            confirmationDiv.hidden = true;
-        }else{
-            setConfirmEvent(null);
-            setConfirmText("");
-            setConfirmUser({
-                username:"",
-                id:""
-            });
-            confirmationDiv.hidden = true;
+        }catch(error){
+            const errorStatus = error.response.status || 400;
+            if(errorStatus === 403){
+                cookies.remove("access_token", {path:"/"});
+                await axios.get(process.env.REACT_APP_BACK_URL+"/logout", {withCredentials: true});
+                navigate("/login");
+            }else{
+                alert(error.message);
+            }
         }
     }
 
