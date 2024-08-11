@@ -11,6 +11,7 @@ function ClientOptionsPage(){
     const navigate = useNavigate();
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
+    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , {withCredentials: true});
 
     async function handleOnLogout(event){
         event.preventDefault();
