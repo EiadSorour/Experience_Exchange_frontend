@@ -20,6 +20,7 @@ function ClientOptionsPage(){
     );
 
     const [availableRooms , setAvailableRooms] = React.useState();
+    const [topic, setTopic] = React.useState("");
 
     React.useEffect(()=>{
         socket.emit("getAllRooms");
@@ -40,6 +41,20 @@ function ClientOptionsPage(){
         }
     }
 
+    function handleOnSearchChange(event){
+        const topic = event.target.value;
+        setTopic(topic);
+    }
+
+    function handleOnSearch(event){
+        event.preventDefault();
+        socket.emit("getTopic" , topic);
+    }
+
+    function handleOnReset(){
+        window.location.reload();
+    }
+
     if(availableRooms){
         return (
             <div>
@@ -51,9 +66,9 @@ function ClientOptionsPage(){
                 <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
                 
                     <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
-                        <input style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
-                        <button class="btn btn-primary ms-2">Search</button>
-                        <button class="btn btn-secondary ms-2">Reset</button>
+                        <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
+                        <button onClick={handleOnSearch} class="btn btn-primary ms-2">Search</button>
+                        <button onClick={handleOnReset} class="btn btn-secondary ms-2">Reset</button>
                     </div>
                     
                     <div style={{overflowY:"scroll", height:"450px"}}>
@@ -63,14 +78,14 @@ function ClientOptionsPage(){
                                 return (
                                     <tbody>
                                         <tr>
-                                            <td scope="row"><span className="fw-bold text-danger">Room Topic :</span> {room.topic}</td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Room Topic:</span> {room.topic}</td>
                                             <td rowSpan={3}><button className="btn btn-success">Ask to join</button></td>
                                         </tr>
                                         <tr>
-                                            <td scope="row"><span className="fw-bold text-danger">Creator:</span> {room.creatorUsername}</td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator:</span> {room.creatorUsername}</td>
                                         </tr>
                                         <tr>
-                                            <td scope="row"><span className="fw-bold text-danger">Creator profession:</span> {room.creatorProf}</td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator profession:</span> {room.creatorProf}</td>
                                         </tr>
                                         <tr><td colSpan={2}><hr/></td></tr>
                                     </tbody>
