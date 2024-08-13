@@ -11,7 +11,23 @@ function ClientOptionsPage(){
     const navigate = useNavigate();
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
-    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , {withCredentials: true});
+    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
+        {
+            extraHeaders: {
+                'Authorization': `Bearer ${token}`
+            }
+        }
+    );
+
+    const [availableRooms , setAvailableRooms] = React.useState();
+
+    React.useEffect(()=>{
+        socket.emit("getAllRooms");
+    }, []);
+
+    socket.on("ReceivedRooms" , (rooms)=>{
+        setAvailableRooms(rooms);
+    })
 
     async function handleOnLogout(event){
         event.preventDefault();
@@ -24,44 +40,52 @@ function ClientOptionsPage(){
         }
     }
 
-    return (
-        <div>
-            <div className="d-inline-flex align-items-center p-2">
-                <h1>Welcome, <span className="text-decoration-underline fw-bold me-3">{user.username}</span></h1>
-                <a onClick={handleOnLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
-            </div>
-
-            <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
-            
-                <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
-                    <input style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
-                    <button class="btn btn-primary ms-2">Search</button>
-                    <button class="btn btn-secondary ms-2">Reset</button>
+    if(availableRooms){
+        return (
+            <div>
+                <div className="d-inline-flex align-items-center p-2">
+                    <h1>Welcome, <span className="text-decoration-underline fw-bold me-3">{user.username}</span></h1>
+                    <a onClick={handleOnLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
                 </div>
+
+                <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
                 
-                <div style={{overflowY:"scroll", height:"450px"}}>
-                    <table class="table table-responsive table-borderless align-middle caption-top">
-                        <caption>Available rooms</caption>
-                        <tbody>
-                            <tr>
-                                <td scope="row"><span className="fw-bold text-danger">Room Topic :</span> this is topic</td>
-                                <td rowSpan={3}><button className="btn btn-success">Ask to join</button></td>
-                            </tr>
-                            <tr>
-                                <td scope="row"><span className="fw-bold text-danger">Creator:</span> eiad tarek</td>
-                            </tr>
-                            <tr>
-                                <td scope="row"><span className="fw-bold text-danger">Creator profession:</span> ai engineer</td>
-                            </tr>
-                            <tr><td colSpan={2}><hr/></td></tr>
-                        </tbody>
-                    </table>
+                    <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
+                        <input style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
+                        <button class="btn btn-primary ms-2">Search</button>
+                        <button class="btn btn-secondary ms-2">Reset</button>
+                    </div>
+                    
+                    <div style={{overflowY:"scroll", height:"450px"}}>
+                        <table class="table table-responsive table-borderless align-middle caption-top">
+                            <caption>Available rooms</caption>
+                            {availableRooms.map((room)=>{
+                                return (
+                                    <tbody>
+                                        <tr>
+                                            <td scope="row"><span className="fw-bold text-danger">Room Topic :</span> {room.topic}</td>
+                                            <td rowSpan={3}><button className="btn btn-success">Ask to join</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td scope="row"><span className="fw-bold text-danger">Creator:</span> {room.creatorUsername}</td>
+                                        </tr>
+                                        <tr>
+                                            <td scope="row"><span className="fw-bold text-danger">Creator profession:</span> {room.creatorProf}</td>
+                                        </tr>
+                                        <tr><td colSpan={2}><hr/></td></tr>
+                                    </tbody>
+                                )
+                            })}
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <button className="btn btn-primary m-5 position-absolute bottom-0 end-0">Create Room</button>
-        </div>
-    )
+                <button className="btn btn-primary m-5 position-absolute bottom-0 end-0">Create Room</button>
+            </div>
+        )
+    }else{
+        return <h1>Loading...</h1>
+    }
 }
 
 export default ClientOptionsPage;
