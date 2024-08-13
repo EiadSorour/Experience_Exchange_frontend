@@ -20,7 +20,9 @@ function ClientOptionsPage(){
     );
 
     const [availableRooms , setAvailableRooms] = React.useState();
-    const [topic, setTopic] = React.useState("");
+    const [creatingRoom , setCreatingRoom] = React.useState(false);
+    const [createTopic, setCreateTopic] = React.useState("");
+    const [searchTopic, setSearchTopic] = React.useState("");
 
     React.useEffect(()=>{
         socket.emit("getAllRooms");
@@ -30,7 +32,7 @@ function ClientOptionsPage(){
         setAvailableRooms(rooms);
     })
 
-    async function handleOnLogout(event){
+    async function onLogout(event){
         event.preventDefault();
         cookies.remove("access_token", {path:"/"});
         try{
@@ -41,34 +43,52 @@ function ClientOptionsPage(){
         }
     }
 
-    function handleOnSearchChange(event){
+    function onSearchTopicChange(event){
         const topic = event.target.value;
-        setTopic(topic);
+        setSearchTopic(topic);
     }
 
-    function handleOnSearch(event){
+    function onSearch(event){
         event.preventDefault();
-        socket.emit("getTopic" , topic);
+        socket.emit("getTopic" , searchTopic);
+    }
+    
+    function onOpenCreateWindow(event){
+        event.preventDefault();
+        setSearchTopic("");
+        setCreatingRoom(true);
     }
 
-    function handleOnReset(){
+    function onCreateTopicChange(event){
+        const topic = event.target.value;
+        setCreateTopic(topic);
+    }
+
+    function onReset(){
         window.location.reload();
     }
 
-    if(availableRooms){
+    function onBack(event){
+        socket.emit("getAllRooms");
+        event.preventDefault();
+        setCreateTopic("");
+        setCreatingRoom(false);
+    }
+
+    if(availableRooms && !creatingRoom){
         return (
             <div>
                 <div className="d-inline-flex align-items-center p-2">
                     <h1>Welcome, <span className="text-decoration-underline fw-bold me-3">{user.username}</span></h1>
-                    <a onClick={handleOnLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
+                    <a onClick={onLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
                 </div>
 
                 <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
                 
                     <div class="d-flex px-5 py-2 col-6 position-relative top-50 start-50 translate-middle">
-                        <input onChange={handleOnSearchChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
-                        <button onClick={handleOnSearch} class="btn btn-primary ms-2">Search</button>
-                        <button onClick={handleOnReset} class="btn btn-secondary ms-2">Reset</button>
+                        <input onChange={onSearchTopicChange} style={{minWidth: "120px"}} type="text" class="form-control" placeholder="Search by topic"/>
+                        <button onClick={onSearch} class="btn btn-primary ms-2">Search</button>
+                        <button onClick={onReset} class="btn btn-secondary ms-2">Reset</button>
                     </div>
                     
                     <div style={{overflowY:"scroll", height:"450px"}}>
@@ -95,7 +115,29 @@ function ClientOptionsPage(){
                     </div>
                 </div>
 
-                <button className="btn btn-primary m-5 position-absolute bottom-0 end-0">Create Room</button>
+                <button onClick={onOpenCreateWindow} className="btn btn-primary m-5 position-absolute bottom-0 end-0">Create Room</button>
+            </div>
+        )
+    }else if(creatingRoom){
+        return (
+            <div>
+                <div className="d-inline-flex align-items-center p-2">
+                    <h1>Welcome, <span className="text-decoration-underline fw-bold me-3">{user.username}</span></h1>
+                    <a onClick={onLogout} role="button" className="link-danger link-offset-2 link-offset-2-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">Logout</a>
+                </div>
+
+                <div className="text-center d-grid gap-2 col-11 mx-auto position-absolute top-50 start-50 translate-middle">
+                    <div class="container">
+                        <div className="row justify-content-center">
+                            <input onChange={onCreateTopicChange} style={{minWidth: "120px", maxWidth: "500px"}} type="text" class="form-control" placeholder="Room Topic"/>
+                        </div>
+                        <div className="row justify-content-center">
+                            <button style={{minWidth: "100px"}} class="btn btn-success m-3 col-1">Create</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onClick={onBack} className="btn btn-primary m-4 position-absolute bottom-0 start-0">Back</button>
             </div>
         )
     }else{
