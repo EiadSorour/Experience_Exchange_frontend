@@ -21,6 +21,7 @@ function ClientOptionsPage(){
 
     const [availableRooms , setAvailableRooms] = React.useState();
     const [creatingRoom , setCreatingRoom] = React.useState(false);
+    const [inRoom , setInRoom] = React.useState(false);
     const [createTopic, setCreateTopic] = React.useState("");
     const [searchTopic, setSearchTopic] = React.useState("");
 
@@ -64,6 +65,12 @@ function ClientOptionsPage(){
         setCreateTopic(topic);
     }
 
+    function onCreateRoom(event){
+        event.preventDefault();
+        setInRoom(true);
+        setCreatingRoom(false);
+    }
+
     function onReset(){
         window.location.reload();
     }
@@ -72,10 +79,11 @@ function ClientOptionsPage(){
         socket.emit("getAllRooms");
         event.preventDefault();
         setCreateTopic("");
+        setInRoom(false);
         setCreatingRoom(false);
     }
 
-    if(availableRooms && !creatingRoom){
+    if(availableRooms && !creatingRoom && !inRoom){
         return (
             <div>
                 <div className="d-inline-flex align-items-center p-2">
@@ -132,12 +140,78 @@ function ClientOptionsPage(){
                             <input onChange={onCreateTopicChange} style={{minWidth: "120px", maxWidth: "500px"}} type="text" class="form-control" placeholder="Room Topic"/>
                         </div>
                         <div className="row justify-content-center">
-                            <button style={{minWidth: "100px"}} class="btn btn-success m-3 col-1">Create</button>
+                            <button onClick={onCreateRoom} style={{minWidth: "100px"}} class="btn btn-success m-3 col-1">Create</button>
                         </div>
                     </div>
                 </div>
 
                 <button onClick={onBack} className="btn btn-primary m-4 position-absolute bottom-0 start-0">Back</button>
+            </div>
+        )
+    }else if(inRoom){
+        return (
+            <div>
+                <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
+                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll"}}>
+                        <h4 className="mt-4 text-info">Waiting</h4>
+                        <div className="d-flex justify-content-center align-items-baseline m-2">
+                            <h6>eiad sorour</h6>
+                            <button className="btn btn-sm ms-1 btn-dark"><i style={{color: "green"}} className="fa-solid fa-circle-check fa-lg"></i></button>
+                            <button className="btn btn-sm btn-dark"><i style={{color: "red"}} className="fa-solid fa-circle-xmark fa-lg"></i></button>
+                        </div>
+                        <div className="d-flex justify-content-center align-items-baseline m-2">
+                            <h6>user33</h6>
+                            <button className="btn btn-sm ms-1 btn-dark"><i style={{color: "green"}} className="fa-solid fa-circle-check fa-lg"></i></button>
+                            <button className="btn btn-sm btn-dark"><i style={{color: "red"}} className="fa-solid fa-circle-xmark fa-lg"></i></button>
+                        </div>
+                        <hr className="m-1 mt-4"/>
+                        <h4 className="mt-4 text-info">In Room</h4>
+                        <div className="d-flex justify-content-center align-items-baseline m-3">
+                            <h6>user33</h6>
+                            <button className="btn btn-danger ms-3">Kick</button>
+                        </div>
+                        <div className="d-flex justify-content-center align-items-baseline m-3">
+                            <h6>ahmed</h6>
+                            <button className="btn btn-danger ms-3">Kick</button>
+                        </div>
+                        <div className="d-flex justify-content-center align-items-baseline m-3">
+                            <h6>Yasser</h6>
+                            <button className="btn btn-danger ms-3">Kick</button>
+                        </div>
+                    </div>
+
+                    <div style={{width:"100%" , height:"100vh"}}>
+                        
+                        <div className="text-center" style={{height:"85vh"}}>
+                            <h1 className="pt-2"><span className="text-info">Topic:</span> Computer Science</h1>
+                            <div className="d-flex flex-wrap justify-content-center">
+                                <div className="m-3">
+                                    <h5 className="text-secondary">User 1</h5>
+                                    <video style={{width:"400px" , height:"220px"}} controls autoplay></video>
+                                </div>
+                                <div className="m-3">
+                                    <h5 className="text-secondary">User 2</h5>
+                                    <video style={{width:"400px" , height:"220px"}} controls autoplay></video>
+                                </div>
+                                <div className="m-3">
+                                    <h5 className="text-secondary">User 3</h5>
+                                    <video style={{width:"400px" , height:"220px"}} controls autoplay></video>
+                                </div>
+                                <div className="m-3">
+                                    <h5 className="text-secondary">User 4</h5>
+                                    <video style={{width:"400px" , height:"220px"}} controls autoplay></video>
+                                </div>
+                            </div>
+                        </div>
+                        <hr/>
+                        <div className="d-flex text-center" style={{height:"10vh"}}>
+                            <button className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-video fa-2xl"></i></button>
+                            <button className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-microphone fa-2xl"></i></button>
+                            <button onClick={onBack} className="btn btn-danger m-3 ms-auto">End Room</button>
+                        </div>
+                    
+                    </div>
+                </div>
             </div>
         )
     }else{
