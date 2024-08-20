@@ -5,8 +5,16 @@ import Cookies from "universal-cookie";
 import { jwtDecode } from "jwt-decode";
 import io from "socket.io-client";
 
+
+var peerConnection;
+var localStream;
+const remoteStream = new MediaStream();
+
 function ClientOptionsPage(){
-    
+
+    const localVideoRef = React.useRef(null);
+    const remoteVideoRef = React.useRef(null);
+
     const cookies = new Cookies();
     const navigate = useNavigate();
     const token = cookies.get("access_token");
@@ -18,6 +26,16 @@ function ClientOptionsPage(){
             }
         }
     );
+    const peerConfig = {
+        iceServers:[
+            {
+                urls:[
+                    'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302'
+                ]
+            }
+        ]
+    }
 
     const [availableRooms , setAvailableRooms] = React.useState();
     const [creatingRoom , setCreatingRoom] = React.useState(false);
@@ -28,6 +46,18 @@ function ClientOptionsPage(){
     React.useEffect(()=>{
         socket.emit("getAllRooms");
     }, []);
+    
+    React.useEffect(()=>{
+        
+        if(localVideoRef.current){
+            localVideoRef.current.srcObject = localStream;
+        }
+
+        if(remoteVideoRef.current){
+            remoteVideoRef.current.srcObject = remoteStream;
+        }
+
+    }, [localVideoRef.current , remoteVideoRef.current]);
 
     socket.on("ReceivedRooms" , (rooms)=>{
         setAvailableRooms(rooms);
@@ -65,8 +95,48 @@ function ClientOptionsPage(){
         setCreateTopic(topic);
     }
 
-    function onCreateRoom(event){
+    async function onCreateRoom(event){
         event.preventDefault();
+
+        // Offer is created here
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            // audio: true
+        });
+
+        peerConnection = new RTCPeerConnection(peerConfig);
+
+        peerConnection.onicecandidate = (event)=>{
+            const iceCandidate = event.candidate;
+            if(iceCandidate){
+                socket.emit("send_ice_candidate_to_server",{
+                    candidate: iceCandidate,
+                    isOffer: true,
+                    creatorUsername: user.username
+                });
+            }
+        };
+    
+        peerConnection.ontrack = (event)=>{
+            event.streams[0].getTracks().forEach(track=>{
+                remoteStream.addTrack(track,remoteStream);
+            })
+        };
+    
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track,localStream);
+        })
+    
+        const offer = await peerConnection.createOffer();
+        peerConnection.setLocalDescription(offer);
+    
+        socket.emit("new_offer" , {
+            offer:offer,
+            topic: createTopic,
+            creatorUsername: user.username, 
+            creatorProf: user.profession
+        });
+
         setInRoom(true);
         setCreatingRoom(false);
     }
@@ -174,7 +244,11 @@ function ClientOptionsPage(){
                             <div className="d-flex flex-wrap justify-content-center">
                                 <div className="m-3">
                                     <h5 className="text-secondary">{user.username}</h5>
-                                    <video style={{width:"400px" , height:"220px"}} controls autoplay></video>
+                                    <video ref={localVideoRef} id="localVideo" style={{width:"400px" , height:"220px"}} controls autoPlay></video>
+                                </div>
+                                <div className="m-3">
+                                    <h5 className="text-secondary">unknown</h5>
+                                    <video ref={remoteVideoRef} id="remoteVideo" style={{width:"400px" , height:"220px"}} controls autoPlay></video>
                                 </div>
 
                                 {/* Rest of users */}
