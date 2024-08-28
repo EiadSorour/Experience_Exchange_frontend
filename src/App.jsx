@@ -8,6 +8,7 @@ import PrivateRoutes from "./utils/PrivateRoutes";
 import ClientOptionsPage from "./pages/ClientOptions";
 import UsersPage from "./pages/Users";
 import RoomsHistoryPage from "./pages/RoomsHistory";
+import RoomPage from "./pages/Rooms";
 
 function App() {
 
@@ -20,6 +21,7 @@ function App() {
         
         <Route element={<PrivateRoutes/>}>
           <Route path="/client/options" element={<ClientOptionsPage />}/>
+          <Route path="/room" element={<RoomPage />}/>
         </Route>
 
         <Route element={<PrivateAdminRoutes/>}>
