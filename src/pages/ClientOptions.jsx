@@ -8,7 +8,6 @@ import io from "socket.io-client";
 var peerConnections = {};
 var localStream;
 var remoteStreams = {};
-var candidatesBuffer = {};
 var currenRoomUsername = "";
 
 function ClientOptionsPage(){
@@ -80,8 +79,13 @@ function ClientOptionsPage(){
 
         peerConnections[clientUsername].ontrack = (event)=>{
             event.streams[0].getTracks().forEach(track=>{
-                peerConnections[clientUsername].addTrack(track,remoteStreams[clientUsername]);
-                remoteStreams[clientUsername].addTrack(track);
+                if(track.kind == "video" && remoteStreams[clientUsername].getVideoTracks().length == 0){
+                    peerConnections[clientUsername].addTrack(track,remoteStreams[clientUsername]);
+                    remoteStreams[clientUsername].addTrack(track);
+                }else if(track.kind == "audio" && remoteStreams[clientUsername].getAudioTracks().length == 0){
+                    peerConnections[clientUsername].addTrack(track,remoteStreams[clientUsername]);
+                    remoteStreams[clientUsername].addTrack(track);
+                }
             })
         };
 
@@ -113,11 +117,6 @@ function ClientOptionsPage(){
 
         peerConnections[fromClientUsername] = new RTCPeerConnection(peerConfig);
 
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            // audio: true
-        });
-
         localStream.getTracks().forEach(track => {
             peerConnections[fromClientUsername].addTrack(track,localStream);
         });
@@ -126,8 +125,13 @@ function ClientOptionsPage(){
 
         peerConnections[fromClientUsername].ontrack = (event)=>{
             event.streams[0].getTracks().forEach(track=>{
-                peerConnections[fromClientUsername].addTrack(track,remoteStreams[fromClientUsername]);
-                remoteStreams[fromClientUsername].addTrack(track);
+                if(track.kind == "video" && remoteStreams[fromClientUsername].getVideoTracks().length == 0){
+                    peerConnections[fromClientUsername].addTrack(track,remoteStreams[fromClientUsername]);
+                    remoteStreams[fromClientUsername].addTrack(track);
+                }else if(track.kind == "audio" && remoteStreams[fromClientUsername].getAudioTracks().length == 0){
+                    peerConnections[fromClientUsername].addTrack(track,remoteStreams[fromClientUsername]);
+                    remoteStreams[fromClientUsername].addTrack(track);
+                }
             })
         };
 
@@ -145,12 +149,6 @@ function ClientOptionsPage(){
 
         peerConnections[fromClientUsername].setRemoteDescription(offer);
 
-        candidatesBuffer[fromClientUsername].forEach((candidate)=>{
-            peerConnections[fromClientUsername].addIceCandidate(candidate);
-        });
-
-        reRender((prev) => prev + 1);
-
         const answer = await peerConnections[fromClientUsername].createAnswer({});
         peerConnections[fromClientUsername].setLocalDescription(answer);
         
@@ -160,6 +158,8 @@ function ClientOptionsPage(){
             creatorUsername: currenRoomUsername,
             clientUsername: user.username
         });
+
+        reRender((prev) => prev + 1);
     });
 
     socket.on("answerRecieved" , (body)=>{
@@ -172,12 +172,7 @@ function ClientOptionsPage(){
     socket.on("offerIceRecieved" , (body)=>{
         const {candidate ,fromUser} = body;
 
-        if (!candidatesBuffer[fromUser]) {
-            candidatesBuffer[fromUser] = [];
-        }
-        candidatesBuffer[fromUser].push(candidate);
-
-        // peerConnections[fromUser].addIceCandidate(candidate);
+        peerConnections[fromUser].addIceCandidate(candidate);
     });
 
     socket.on("answerIceRecieved" , (body)=>{
@@ -227,8 +222,10 @@ function ClientOptionsPage(){
 
         localStream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            // audio: true
+            audio: true
         });
+        localStream.getAudioTracks()[0].enabled = false;
+        localStream.getVideoTracks()[0].enabled = false;
 
         socket.emit("roomCreated", {
             topic: createTopic,
@@ -243,6 +240,14 @@ function ClientOptionsPage(){
     async function joinRoom(args , event){
         event.preventDefault();
         const room = args[0];
+
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        localStream.getAudioTracks()[0].enabled = false;
+        localStream.getVideoTracks()[0].enabled = false;
+
 
         currenRoomUsername = room.creatorUsername;
         setCreateTopic(room.topic);
@@ -268,6 +273,48 @@ function ClientOptionsPage(){
         setCreateTopic("");
         setInRoom(false);
         setCreatingRoom(false);
+    }
+
+    function videoControl(event){
+        event.preventDefault();
+        const videoTrack = localStream.getVideoTracks()[0];
+        const icon = document.getElementById("videoIcon");
+        if(videoTrack.enabled){
+            videoTrack.enabled = false;
+            icon.classList.remove(["fa-video"]);
+            icon.classList.add(["fa-video-slash"]);
+            icon.style.color = "red";
+        }else{
+            videoTrack.enabled = true;
+            icon.classList.remove(["fa-video-slash"]);
+            icon.classList.add(["fa-video"]);
+            icon.style.color = "#3776e1";
+        }
+    }
+    
+    function audioControl(event){
+        event.preventDefault();
+        const audioTrack = localStream.getAudioTracks()[0];
+        const icon = document.getElementById("audioIcon");
+        if(audioTrack.enabled){
+            audioTrack.enabled = false;
+            icon.classList.remove(["fa-microphone"]);
+            icon.classList.add(["fa-microphone-slash"]);
+            icon.style.color = "red";
+        }else{
+            audioTrack.enabled = true;
+            icon.classList.remove(["fa-microphone-slash"]);
+            icon.classList.add(["fa-microphone"]);
+            icon.style.color = "#3776e1";
+        }
+    }
+
+    function test(){
+        // console.log("render");
+        // reRender((prev) => prev + 1);
+
+        console.log(peerConnections);
+        console.log(remoteStreams);
     }
 
     if(availableRooms && !creatingRoom && !inRoom){
@@ -377,8 +424,8 @@ function ClientOptionsPage(){
                         </div>
                         <hr/>
                         <div className="d-flex text-center" style={{height:"10vh"}}>
-                            <button className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-video fa-2xl"></i></button>
-                            <button className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-microphone fa-2xl"></i></button>
+                            <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: "red"}} className="fa-solid fa-video-slash fa-2xl"></i></button>
+                            <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: "red"}} className="fa-solid fa-microphone-slash fa-2xl"></i></button>
                             <button onClick={onBack} className="btn btn-danger m-3 ms-auto">End Room</button>
                         </div>
                     
