@@ -5,11 +5,6 @@ import Cookies from "universal-cookie";
 import { jwtDecode } from "jwt-decode";
 import io from "socket.io-client";
 
-var peerConnections = {};
-var localStream;
-var remoteStreams = {};
-var currenRoomUsername = "";
-
 function ClientOptionsPage(){
 
     const cookies = new Cookies();
@@ -23,165 +18,24 @@ function ClientOptionsPage(){
             }
         }
     );
-    const peerConfig = {
-        iceServers:[
-            {
-                urls:[
-                    'stun:stun.l.google.com:19302',
-                    'stun:stun1.l.google.com:19302'
-                ]
-            }
-        ]
-    }
-
-    const localVideoRef = React.useRef(null);
 
     const [availableRooms , setAvailableRooms] = React.useState();
     const [creatingRoom , setCreatingRoom] = React.useState(false);
-    const [inRoom , setInRoom] = React.useState(false);
     const [createTopic, setCreateTopic] = React.useState("");
     const [searchTopic, setSearchTopic] = React.useState("");
-    const [dummy, reRender] = React.useState(0);
 
     React.useEffect(()=>{
         socket.emit("getAllRooms");
     }, []);
-    
-    React.useEffect(()=>{
-
-        if(localVideoRef.current){
-            localVideoRef.current.srcObject = localStream;
-        }
-
-        Object.keys(remoteStreams).forEach((key)=>{
-            const remoteVideo = document.getElementById(`remote-${key}`);
-            remoteVideo.srcObject = remoteStreams[key];
-        })
-
-    }, [dummy, localVideoRef.current]);
 
     socket.on("ReceivedRooms" , (rooms)=>{
         setAvailableRooms(rooms);
     });
 
-
-
-    socket.on("newUserJoin" , async (body)=>{
-        const {clientUsername, userSocket} = body;
-
-        peerConnections[clientUsername] = new RTCPeerConnection(peerConfig);
-        
-        localStream.getTracks().forEach(track => {
-            peerConnections[clientUsername].addTrack(track,localStream);
-        });
-
-        remoteStreams[clientUsername] = new MediaStream();
-
-        peerConnections[clientUsername].ontrack = (event)=>{
-            event.streams[0].getTracks().forEach(track=>{
-                if(track.kind == "video" && remoteStreams[clientUsername].getVideoTracks().length == 0){
-                    peerConnections[clientUsername].addTrack(track,remoteStreams[clientUsername]);
-                    remoteStreams[clientUsername].addTrack(track);
-                }else if(track.kind == "audio" && remoteStreams[clientUsername].getAudioTracks().length == 0){
-                    peerConnections[clientUsername].addTrack(track,remoteStreams[clientUsername]);
-                    remoteStreams[clientUsername].addTrack(track);
-                }
-            })
-        };
-
-        peerConnections[clientUsername].onicecandidate = (event)=>{
-            const iceCandidate = event.candidate;
-            if(iceCandidate){
-                socket.emit("sendCandidateToServer",{
-                    candidate: iceCandidate,
-                    isOffer: true,
-                    toSocket: userSocket,
-                    fromUser: user.username
-                });
-            }
-        };
-
-        const offer = await peerConnections[clientUsername].createOffer();
-        peerConnections[clientUsername].setLocalDescription(offer);
-
-        socket.emit("joinAccepted" , {
-            offer: offer,
-            toSocket: userSocket,
-            clientUsername: user.username
-        });
-
-    });
-
-    socket.on("getAnswer" , async (body)=>{
-        const {offer,fromSocket,fromClientUsername} = body;
-
-        peerConnections[fromClientUsername] = new RTCPeerConnection(peerConfig);
-
-        localStream.getTracks().forEach(track => {
-            peerConnections[fromClientUsername].addTrack(track,localStream);
-        });
-
-        remoteStreams[fromClientUsername] = new MediaStream();
-
-        peerConnections[fromClientUsername].ontrack = (event)=>{
-            event.streams[0].getTracks().forEach(track=>{
-                if(track.kind == "video" && remoteStreams[fromClientUsername].getVideoTracks().length == 0){
-                    peerConnections[fromClientUsername].addTrack(track,remoteStreams[fromClientUsername]);
-                    remoteStreams[fromClientUsername].addTrack(track);
-                }else if(track.kind == "audio" && remoteStreams[fromClientUsername].getAudioTracks().length == 0){
-                    peerConnections[fromClientUsername].addTrack(track,remoteStreams[fromClientUsername]);
-                    remoteStreams[fromClientUsername].addTrack(track);
-                }
-            })
-        };
-
-        peerConnections[fromClientUsername].onicecandidate = (event)=>{
-            const iceCandidate = event.candidate;
-            if(iceCandidate){
-                socket.emit("sendCandidateToServer",{
-                    candidate: iceCandidate,
-                    isOffer: false,
-                    toSocket: fromSocket,
-                    fromUser: user.username
-                });
-            }
-        };
-
-        peerConnections[fromClientUsername].setRemoteDescription(offer);
-
-        const answer = await peerConnections[fromClientUsername].createAnswer({});
-        peerConnections[fromClientUsername].setLocalDescription(answer);
-        
-        socket.emit("sendAnswer", {
-            answer: answer,
-            toSocket: fromSocket,
-            creatorUsername: currenRoomUsername,
-            clientUsername: user.username
-        });
-
-        reRender((prev) => prev + 1);
-    });
-
-    socket.on("answerRecieved" , (body)=>{
-        const {answer,clientUsername} = body;
-        peerConnections[clientUsername].setRemoteDescription(answer);
-
-        reRender((prev) => prev + 1);
-    });
-
-    socket.on("offerIceRecieved" , (body)=>{
-        const {candidate ,fromUser} = body;
-
-        peerConnections[fromUser].addIceCandidate(candidate);
-    });
-
-    socket.on("answerIceRecieved" , (body)=>{
-        const {candidate ,fromUser} = body;
-        
-        peerConnections[fromUser].addIceCandidate(candidate);
-    });
-
-    
+    socket.on("gotRoomID", (body)=>{
+        const {roomID} = body;
+        navigate(`/room/${roomID}`);
+    })
 
     async function onLogout(event){
         event.preventDefault();
@@ -215,53 +69,22 @@ function ClientOptionsPage(){
         setCreateTopic(topic);
     }
 
-
-
     async function onCreateRoom(event){
         event.preventDefault();
 
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
-        localStream.getAudioTracks()[0].enabled = false;
-        localStream.getVideoTracks()[0].enabled = false;
-
-        socket.emit("roomCreated", {
+        socket.emit("createRoom", {
             topic: createTopic,
             creatorUsername: user.username,
-            creatorProf: user.profession,
+            creatorProf: user.profession
         });
-
-        setInRoom(true);
-        setCreatingRoom(false);
     }
 
     async function joinRoom(args , event){
         event.preventDefault();
-        const room = args[0];
+        const roomID = args[0];
 
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
-        localStream.getAudioTracks()[0].enabled = false;
-        localStream.getVideoTracks()[0].enabled = false;
-
-
-        currenRoomUsername = room.creatorUsername;
-        setCreateTopic(room.topic);
-
-        socket.emit("askToJoin", {
-            creatorUsername: room.creatorUsername,
-            clientUsername: user.username
-        });
-
-        setInRoom(true);
-        setCreatingRoom(false);
+        navigate(`/waiting/${roomID}`);
     }
-
-
 
     function onReset(){
         window.location.reload();
@@ -271,53 +94,10 @@ function ClientOptionsPage(){
         socket.emit("getAllRooms");
         event.preventDefault();
         setCreateTopic("");
-        setInRoom(false);
         setCreatingRoom(false);
     }
 
-    function videoControl(event){
-        event.preventDefault();
-        const videoTrack = localStream.getVideoTracks()[0];
-        const icon = document.getElementById("videoIcon");
-        if(videoTrack.enabled){
-            videoTrack.enabled = false;
-            icon.classList.remove(["fa-video"]);
-            icon.classList.add(["fa-video-slash"]);
-            icon.style.color = "red";
-        }else{
-            videoTrack.enabled = true;
-            icon.classList.remove(["fa-video-slash"]);
-            icon.classList.add(["fa-video"]);
-            icon.style.color = "#3776e1";
-        }
-    }
-    
-    function audioControl(event){
-        event.preventDefault();
-        const audioTrack = localStream.getAudioTracks()[0];
-        const icon = document.getElementById("audioIcon");
-        if(audioTrack.enabled){
-            audioTrack.enabled = false;
-            icon.classList.remove(["fa-microphone"]);
-            icon.classList.add(["fa-microphone-slash"]);
-            icon.style.color = "red";
-        }else{
-            audioTrack.enabled = true;
-            icon.classList.remove(["fa-microphone-slash"]);
-            icon.classList.add(["fa-microphone"]);
-            icon.style.color = "#3776e1";
-        }
-    }
-
-    function test(){
-        // console.log("render");
-        // reRender((prev) => prev + 1);
-
-        console.log(peerConnections);
-        console.log(remoteStreams);
-    }
-
-    if(availableRooms && !creatingRoom && !inRoom){
+    if(availableRooms && !creatingRoom){
         return (
             <div>
                 <div className="d-inline-flex align-items-center p-2">
@@ -336,18 +116,18 @@ function ClientOptionsPage(){
                     <div style={{overflowY:"scroll", height:"450px"}}>
                         <table class="table table-responsive table-borderless align-middle caption-top">
                             <caption>Available rooms</caption>
-                            {availableRooms.map((room)=>{
+                            {Object.entries(availableRooms).map(([key,value])=>{
                                 return (
                                     <tbody>
                                         <tr>
-                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Room Topic:</span> {room.topic}</td>
-                                            <td onClick={joinRoom.bind(this , [room])} rowSpan={3}><button className="btn btn-success">Ask to join</button></td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Room Topic:</span> {value.topic}</td>
+                                            <td onClick={joinRoom.bind(this , [key])} rowSpan={3}><button className="btn btn-success">Ask to join</button></td>
                                         </tr>
                                         <tr>
-                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator:</span> {room.creatorUsername}</td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator:</span> {value.creatorUsername}</td>
                                         </tr>
                                         <tr>
-                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator profession:</span> {room.creatorProf}</td>
+                                            <td scope="row" className="text-capitalize"><span className="fw-bold text-danger">Creator profession:</span> {value.creatorProf}</td>
                                         </tr>
                                         <tr><td colSpan={2}><hr/></td></tr>
                                     </tbody>
@@ -380,57 +160,6 @@ function ClientOptionsPage(){
                 </div>
 
                 <button onClick={onBack} className="btn btn-primary m-4 position-absolute bottom-0 start-0">Back</button>
-            </div>
-        )
-    }else if(inRoom){
-        return (
-            <div>
-                <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
-                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll"}}>
-                        <h4 className="mt-4 text-info">Waiting</h4>
-                        {/* <div className="d-flex justify-content-center align-items-baseline m-2">
-                            <h6>eiad sorour</h6>
-                            <button className="btn btn-sm ms-1 btn-dark"><i style={{color: "green"}} className="fa-solid fa-circle-check fa-lg"></i></button>
-                            <button className="btn btn-sm btn-dark"><i style={{color: "red"}} className="fa-solid fa-circle-xmark fa-lg"></i></button>
-                        </div> */}
-                        <hr className="m-1 mt-4"/>
-                        <h4 className="mt-4 text-info">In Room</h4>
-                        {/* <div className="d-flex justify-content-center align-items-baseline m-3">
-                            <h6>user33</h6>
-                            <button className="btn btn-danger ms-3">Kick</button>
-                        </div> */}
-                    </div>
-
-                    <div style={{width:"100%" , height:"100vh"}}>
-                        
-                        <div className="text-center" style={{height:"85vh"}}>
-                            <h1 className="pt-2"><span className="text-info">Topic:</span> {createTopic}</h1>
-                            <div className="d-flex flex-column flex-wrap justify-content-center">
-                                <div className="m-3">
-                                    <h5 className="text-secondary">{user.username}</h5>
-                                    <video ref={localVideoRef} id="localVideo" style={{width:"400px" , height:"220px"}} autoPlay></video>
-                                </div>
-                                <div id="videos" className="d-flex flex-wrap justify-content-center">
-                                    {Object.keys(remoteStreams).map((key)=>{
-                                        return (
-                                            <div className="m-1">
-                                                <h5 className="text-secondary">{key}</h5>
-                                                <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <hr/>
-                        <div className="d-flex text-center" style={{height:"10vh"}}>
-                            <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: "red"}} className="fa-solid fa-video-slash fa-2xl"></i></button>
-                            <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: "red"}} className="fa-solid fa-microphone-slash fa-2xl"></i></button>
-                            <button onClick={onBack} className="btn btn-danger m-3 ms-auto">End Room</button>
-                        </div>
-                    
-                    </div>
-                </div>
             </div>
         )
     }else{
