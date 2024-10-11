@@ -26,7 +26,7 @@ function WaitingPage(){
     }, []);
 
     socket.on("accepted" , (body)=>{
-        window.location.href = `/room/${currentRoomID}`;
+        window.location.href = `/room/${body.roomType}/${currentRoomID}`;
     })
 
     socket.on("rejected" , (body)=>{
@@ -46,7 +46,7 @@ function WaitingPage(){
 
     function onCancel(event){
         socket.emit("cancelWaiting" , {roomID: currentRoomID , username: user.username});
-        navigate("/client/options");
+        window.location.href = "/client/options";
     }
 
     return (

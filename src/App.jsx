@@ -8,8 +8,10 @@ import PrivateRoutes from "./utils/PrivateRoutes";
 import ClientOptionsPage from "./pages/ClientOptions";
 import UsersPage from "./pages/Users";
 import RoomsHistoryPage from "./pages/RoomsHistory";
-import RoomPage from "./pages/Room";
 import WaitingPage from "./pages/Waiting";
+import VideoRoom from "./pages/VideoRoom";
+import ChatRoom from "./pages/ChatRoom";
+import { SocketProvider } from "./utils/SocketContex";
 
 function App() {
 
@@ -20,10 +22,11 @@ function App() {
         <Route path="/register" element={<RegisterPage />}/>
         <Route path="/login" element={<LoginPage />}/>
         
-        <Route element={<PrivateRoutes/>}>
-          <Route path="/client/options" element={<ClientOptionsPage />}/>
-          <Route path="/room/:currentRoomID" element={<RoomPage />}/>
-          <Route path="/waiting/:currentRoomID" element={<WaitingPage />}/>
+        <Route element={<PrivateRoutes/> }>
+            <Route path="/client/options" element={<ClientOptionsPage />}/>
+            <Route path="/room/Video/:currentRoomID" element={<VideoRoom />}/>
+            <Route path="/room/Chat/:currentRoomID" element={<ChatRoom />}/>
+            <Route path="/waiting/:currentRoomID" element={<WaitingPage />}/>
         </Route>
 
         <Route element={<PrivateAdminRoutes/>}>

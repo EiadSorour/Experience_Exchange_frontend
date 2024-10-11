@@ -24,12 +24,34 @@ let remoteStreams = {};
 let waitingUsers = {};
 let inRoomUsers={};
 
-function RoomPage(){
+function Message({message , username}){
+    if(username){
+        return (
+            <div className="p-2 align-self-start" style={{maxWidth: "250px"}}>
+                <div className="text-bold text-warning">{username}</div>
+                <div className="d-flex flex-column align-items-start rounded p-1 bg-secondary" style={{ height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
+                    <div className="mx-2">{message}</div>
+                </div>
+            </div>
+        )
+    }else{
+        return (
+            <div className="p-2 align-self-end" style={{maxWidth: "250px"}}>
+                <div className="d-flex flex-column align-items-start rounded p-1 bg-success" style={{height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
+                    <div className="mx-2">{message}</div>
+                </div>
+            </div>
+        )
+    }
+}
+
+function VideoRoom(){
 
     const navigate = useNavigate();
     const cookies = new Cookies();
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
+    const roomType = "Video";
     const {currentRoomID} = useParams();
     const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
         {
@@ -50,6 +72,8 @@ function RoomPage(){
     });
     const [roomTopic, setRoomTopic] = React.useState("");
     const [creatorUsername, setCreatorUsername] = React.useState("");
+    const [message, setMessage] = React.useState("");
+    const [messagesElements ,setMessagesElements] = React.useState([]);
     const [dummy, reRender] = React.useState(0);
 
     React.useEffect(()=>{
@@ -268,7 +292,7 @@ function RoomPage(){
     }
 
     function endRoom(event){
-        socket.emit("endRoom", {roomID:currentRoomID});
+        socket.emit("endRoom", {roomID:currentRoomID, roomType: roomType});
     }
 
     function leaveRoom(event){
@@ -287,7 +311,7 @@ function RoomPage(){
         const username = args[0];
         const userId = waitingUsers[`${username}`][`id`];
 
-        socket.emit("acceptUser" , {roomID:currentRoomID , acceptedUsername: username  , acceptedId: userId});
+        socket.emit("acceptUser" , {roomID:currentRoomID , roomType: roomType , acceptedUsername: username  , acceptedId: userId});
     }
     
     function rejectUser(args , event){
@@ -298,6 +322,38 @@ function RoomPage(){
 
         socket.emit("rejectUser" , {roomID:currentRoomID , rejectedUsername: username  , rejectedId: userId});
     }
+
+    function sendMessage(event){
+        event.preventDefault();
+        if(message.trim().length > 0){
+            setMessage("");
+            socket.emit("sendMessage" , {roomID: currentRoomID, username: user.username , message: message});
+        }
+    }
+
+    function onMessageChange(event){
+        const message = event.target.value;
+        setMessage(message);
+    }
+
+    socket.on("gotMessage" , (body)=>{
+        const {username , message} = body;
+        const key = messagesElements.length + 1;
+        if(username !== user.username){
+            setMessagesElements((prev)=>{
+                return (
+                    [...prev, <Message key={key} message={message} username={username}></Message>]
+                )
+            });
+        }else{
+            // this is your message
+            setMessagesElements((prev)=>{
+                return (
+                    [...prev, <Message key={key} message={message}></Message>]
+                )
+            });
+        }
+    });
 
 
 
@@ -321,7 +377,7 @@ function RoomPage(){
         return (
             <div>
                 <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
-                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll"}}>
+                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll", scrollbarWidth: "thin"}}>
                         <h4 className="mt-4 text-info">Waiting</h4>
                         {Object.keys(waitingUsers).map((username)=>{
                             if(waitingUsers[`${username}`]['accepted'] == false){
@@ -353,20 +409,40 @@ function RoomPage(){
                         
                         <div className="text-center" style={{height:"85vh"}}>
                             <h1 className="pt-2"><span className="text-info">Topic:</span> {roomTopic}</h1>
-                            <div className="d-flex flex-column flex-wrap justify-content-center">
-                                <div className="m-3">
-                                    <h5 className="text-secondary">{user.username}</h5>
-                                    <video ref={localVideoRef} id="localVideo" style={{width:"400px" , height:"220px"}} autoPlay></video>
+                            
+                            <div className="d-flex flex-row">
+                                <div className="d-flex flex-column me-auto flex-wrap justify-content-center">
+                                    <div className="m-3">
+                                        <h5 className="text-secondary">{user.username}</h5>
+                                        <video ref={localVideoRef} id="localVideo" style={{width:"400px" , height:"220px"}} autoPlay></video>
+                                    </div>
+                                    <div id="videos" className="d-flex flex-wrap justify-content-center">
+                                        {Object.keys(remoteStreams).map((key)=>{
+                                            return (
+                                                <div className="m-1">
+                                                    <h5 className="text-secondary">{key}</h5>
+                                                    <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
-                                <div id="videos" className="d-flex flex-wrap justify-content-center">
-                                    {Object.keys(remoteStreams).map((key)=>{
-                                        return (
-                                            <div className="m-1">
-                                                <h5 className="text-secondary">{key}</h5>
-                                                <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                            </div>
-                                        )
-                                    })}
+
+                                <div className="me-2" style={{borderLeft: "1px solid #adb5bd"}}></div>
+                                <div style={{minWidth: "400px"}}>
+
+
+
+                                    <div className="d-flex text-start flex-column" style={{overflow: "auto" , height: "60vh", scrollbarWidth: "none"}}>
+                                        {messagesElements}
+                                    </div>
+                                    <div className="d-flex flex-row mt-5">
+                                        <textarea onChange={onMessageChange} value={message} style={{minWidth: "80px", resize: "none", scrollbarWidth: "none"}} type="text" class="form-control" placeholder="message"/>
+                                        <button onClick={sendMessage} className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-paper-plane fa-xl"></i></button>
+                                    </div>
+
+
+
                                 </div>
                             </div>
                         </div>
@@ -386,7 +462,7 @@ function RoomPage(){
         return (
             <div>
                 <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
-                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll"}}>
+                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll", scrollbarWidth: "thin"}}>
                         <h4 className="mt-4 text-info">Waiting</h4>
                         {Object.keys(waitingUsers).map((username)=>{
                             if(waitingUsers[`${username}`]['accepted'] == false){
@@ -414,28 +490,46 @@ function RoomPage(){
                         
                         <div className="text-center" style={{height:"85vh"}}>
                             <h1 className="pt-2"><span className="text-info">Topic:</span> {roomTopic}</h1>
-                            <div className="d-flex flex-column flex-wrap justify-content-center">
-                                {remoteStreams[`${creatorUsername}`] ? 
-                                    <div className="m-3">
-                                        <h5 className="text-secondary">{creatorUsername}</h5>
-                                        <video id={`remote-${creatorUsername}`} style={{width:"400px" , height:"220px"}} autoPlay></video>
+                            <div className="d-flex flex-row">
+                                <div className="d-flex flex-column me-auto flex-wrap justify-content-center">
+                                    {remoteStreams[`${creatorUsername}`] ? 
+                                        <div className="m-3">
+                                            <h5 className="text-secondary">{creatorUsername}</h5>
+                                            <video id={`remote-${creatorUsername}`} style={{width:"400px" , height:"220px"}} autoPlay></video>
+                                        </div>
+                                    : <></>}
+                                    <div id="videos" className="d-flex flex-wrap justify-content-center">
+                                        <div className="m-1">
+                                            <h5 className="text-secondary">{user.username}</h5>
+                                            <video ref={localVideoRef} id="localVideo" style={{width:"50px" , height:"50px"}} autoPlay></video>
+                                        </div>
+                                        {Object.keys(remoteStreams).map((key)=>{
+                                            if(key !== creatorUsername){
+                                                return (
+                                                    <div className="m-1">
+                                                        <h5 className="text-secondary">{key}</h5>
+                                                        <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
+                                                    </div>
+                                                )
+                                            }
+                                        })}
                                     </div>
-                                : <></>}
-                                <div id="videos" className="d-flex flex-wrap justify-content-center">
-                                    <div className="m-1">
-                                        <h5 className="text-secondary">{user.username}</h5>
-                                        <video ref={localVideoRef} id="localVideo" style={{width:"50px" , height:"50px"}} autoPlay></video>
+                                </div>
+
+                                <div className="me-2" style={{borderLeft: "1px solid #adb5bd"}}></div>
+                                <div style={{minWidth: "400px"}}>
+
+
+
+                                    <div className="d-flex text-start flex-column" style={{overflow: "auto" , height: "60vh", scrollbarWidth: "none"}}>
+                                        {messagesElements}
                                     </div>
-                                    {Object.keys(remoteStreams).map((key)=>{
-                                        if(key !== creatorUsername){
-                                            return (
-                                                <div className="m-1">
-                                                    <h5 className="text-secondary">{key}</h5>
-                                                    <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                                </div>
-                                            )
-                                        }
-                                    })}
+                                    <div className="d-flex flex-row mt-5">
+                                        <textarea onChange={onMessageChange} value={message} style={{minWidth: "80px", resize: "none", scrollbarWidth: "none"}} type="text" class="form-control" placeholder="message"/>
+                                        <button onClick={sendMessage} className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-paper-plane fa-xl"></i></button>
+                                    </div>
+
+
                                 </div>
                             </div>
                         </div>
@@ -444,6 +538,12 @@ function RoomPage(){
                             <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: videoIconParams.color}} className={videoIconParams.class}></i></button>
                             <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: audioIconParams.color}} className={audioIconParams.class}></i></button>
                             {/* <button onClick={test} className="btn btn-dark">test</button> */}
+                            
+                            
+                            
+                            
+                            
+                            
                             <button onClick={leaveRoom} className="btn btn-danger m-3 ms-auto">Leave Room</button>
                         </div>
                     
@@ -454,4 +554,4 @@ function RoomPage(){
     }
 }
 
-export default RoomPage;
+export default VideoRoom;

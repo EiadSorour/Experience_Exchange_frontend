@@ -5,6 +5,8 @@ import Cookies from "universal-cookie";
 import { jwtDecode } from "jwt-decode";
 import io from "socket.io-client";
 
+var chatRoomsOnly = false;
+
 function ClientOptionsPage(){
 
     const cookies = new Cookies();
@@ -25,17 +27,25 @@ function ClientOptionsPage(){
     const [searchTopic, setSearchTopic] = React.useState("");
 
     React.useEffect(()=>{
-        socket.emit("getAllRooms");
+        socket.emit("getVideoRooms");
     }, []);
 
-    socket.on("ReceivedRooms" , (rooms)=>{
-        setAvailableRooms(rooms);
+    socket.on("gotRoomID", (body)=>{
+        const {roomID, roomType} = body;
+        navigate(`/room/${roomType}/${roomID}`);
+    })
+
+    socket.on("VideoRooms" , (rooms)=>{
+        if(!chatRoomsOnly){
+            setAvailableRooms(rooms)
+        }
     });
 
-    socket.on("gotRoomID", (body)=>{
-        const {roomID} = body;
-        navigate(`/room/${roomID}`);
-    })
+    socket.on("ChatRooms" , (rooms)=>{
+        if(chatRoomsOnly){
+            setAvailableRooms(rooms)
+        }
+    });
 
     async function onLogout(event){
         event.preventDefault();
@@ -55,7 +65,11 @@ function ClientOptionsPage(){
 
     function onSearch(event){
         event.preventDefault();
-        socket.emit("getTopic" , searchTopic);
+        if(chatRoomsOnly){
+            socket.emit("getChatTopics" , searchTopic);
+        }else{
+            socket.emit("getVideoTopics" , searchTopic);
+        }
     }
     
     function onOpenCreateWindow(event){
@@ -69,13 +83,15 @@ function ClientOptionsPage(){
         setCreateTopic(topic);
     }
 
-    async function onCreateRoom(event){
+    async function onCreateRoom(args , event){
         event.preventDefault();
+        const roomType = args[0];
 
-        socket.emit("createRoom", {
+        socket.emit(`create${roomType}Room`, {
             topic: createTopic,
             creatorUsername: user.username,
-            creatorProf: user.profession
+            creatorProf: user.profession,
+            roomType: roomType
         });
     }
 
@@ -97,6 +113,12 @@ function ClientOptionsPage(){
         setCreatingRoom(false);
     }
 
+    function onChatOnlyChanges(event){
+        chatRoomsOnly = !chatRoomsOnly;
+        socket.emit("getVideoRooms");
+        socket.emit("getChatRooms");
+    }
+
     if(availableRooms && !creatingRoom){
         return (
             <div>
@@ -115,7 +137,13 @@ function ClientOptionsPage(){
                     
                     <div style={{overflowY:"scroll", height:"450px"}}>
                         <table class="table table-responsive table-borderless align-middle caption-top">
-                            <caption>Available rooms</caption>
+                            <caption>
+                                <div class="form-check form-switch">
+                                    <input onChange={onChatOnlyChanges} value={chatRoomsOnly} class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"/>
+                                    <label class="form-check-label" for="flexSwitchCheckDefault">Chat only rooms</label>
+                                </div>
+                                Available rooms
+                            </caption>
                             {Object.entries(availableRooms).map(([key,value])=>{
                                 return (
                                     <tbody>
@@ -154,7 +182,8 @@ function ClientOptionsPage(){
                             <input onChange={onCreateTopicChange} style={{minWidth: "120px", maxWidth: "500px"}} type="text" class="form-control" placeholder="Room Topic"/>
                         </div>
                         <div className="row justify-content-center">
-                            <button onClick={onCreateRoom} style={{minWidth: "100px"}} class="btn btn-success m-3 col-1">Create</button>
+                            <button onClick={onCreateRoom.bind(this , ["Video"])} style={{minWidth: "100px"}} class="btn btn-success m-3 col-1">Video Room</button>
+                            <button onClick={onCreateRoom.bind(this , ["Chat"])} style={{minWidth: "100px"}} class="btn btn-secondary m-3 col-1">Chat Room</button>
                         </div>
                     </div>
                 </div>
