@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { jwtDecode } from "jwt-decode";
-import io from "socket.io-client";
+import { useSocket } from "../utils/SocketContex";
 
 function WaitingPage(){
 
@@ -13,13 +13,7 @@ function WaitingPage(){
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
     const {currentRoomID} = useParams();
-    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
-        {
-            extraHeaders: {
-                'Authorization': `Bearer ${token}`
-            }
-        }
-    );
+    const socket = useSocket();
 
     React.useEffect(()=>{
         socket.emit("userWaiting" , {roomID:currentRoomID, username: user.username});

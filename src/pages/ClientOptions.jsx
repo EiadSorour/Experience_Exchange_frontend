@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { jwtDecode } from "jwt-decode";
-import io from "socket.io-client";
+import { useSocket } from "../utils/SocketContex";
 
 var chatRoomsOnly = false;
 
@@ -13,13 +13,7 @@ function ClientOptionsPage(){
     const navigate = useNavigate();
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
-    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
-        {
-            extraHeaders: {
-                'Authorization': `Bearer ${token}`
-            }
-        }
-    );
+    const socket = useSocket();
 
     const [availableRooms , setAvailableRooms] = React.useState();
     const [creatingRoom , setCreatingRoom] = React.useState(false);
@@ -119,6 +113,22 @@ function ClientOptionsPage(){
         socket.emit("getChatRooms");
     }
 
+
+
+
+    async function test(){
+
+        // console.log(remoteStreams);
+        socket.emit("test", {
+            // roomID: currentRoomID,
+            // username: "qq"
+        })
+    }
+
+    socket.on("test", (body)=>{
+        console.log(body.room);
+    })
+
     if(availableRooms && !creatingRoom){
         return (
             <div>
@@ -188,6 +198,7 @@ function ClientOptionsPage(){
                     </div>
                 </div>
 
+                {/* <button onClick={test} className="btn btn-dark">test</button> */}
                 <button onClick={onBack} className="btn btn-primary m-4 position-absolute bottom-0 start-0">Back</button>
             </div>
         )

@@ -1,18 +1,7 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import Cookies from "universal-cookie";
-import { jwtDecode } from "jwt-decode";
-import { useParams } from 'react-router-dom';
-import io from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
-import {
-    types,
-    version,
-    Device,
-    detectDevice,
-    parseScalabilityMode,
-    debug
-} from "mediasoup-client";
+import { useSocket } from "../utils/SocketContex";
+import BasicRoomFunctionalities from "../utils/BasicRoomFunc";
 
 let localStream;
 let device;
@@ -21,45 +10,31 @@ let receiverTransport;
 let audioProducer;
 let videoProducer;
 let remoteStreams = {};
-let waitingUsers = {};
-let inRoomUsers={};
-
-function Message({message , username}){
-    if(username){
-        return (
-            <div className="p-2 align-self-start" style={{maxWidth: "250px"}}>
-                <div className="text-bold text-warning">{username}</div>
-                <div className="d-flex flex-column align-items-start rounded p-1 bg-secondary" style={{ height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
-                    <div className="mx-2">{message}</div>
-                </div>
-            </div>
-        )
-    }else{
-        return (
-            <div className="p-2 align-self-end" style={{maxWidth: "250px"}}>
-                <div className="d-flex flex-column align-items-start rounded p-1 bg-success" style={{height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
-                    <div className="mx-2">{message}</div>
-                </div>
-            </div>
-        )
-    }
-}
 
 function VideoRoom(){
 
-    const navigate = useNavigate();
-    const cookies = new Cookies();
-    const token = cookies.get("access_token");
-    const user = jwtDecode(token);
-    const roomType = "Video";
-    const {currentRoomID} = useParams();
-    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
-        {
-            extraHeaders: {
-                'Authorization': `Bearer ${token}`
-            }
-        }
-    );
+    const socket = useSocket();
+    const {
+        user,
+        currentRoomID,
+        waitingUsers,
+        inRoomUsers,
+        roomTopic,
+        creatorUsername, 
+        message,
+        messagesElements,
+        dummy,
+        endRoom,
+        leaveRoom,
+        kickUser,
+        acceptUser,
+        rejectUser, 
+        sendMessage,
+        onMessageChange,
+        deleteInRoomUser,
+        refresh
+    } = BasicRoomFunctionalities(socket , "Video");
+
 
     const localVideoRef = React.useRef(null);
     const [videoIconParams, setVideoIconParams] = React.useState({
@@ -70,17 +45,124 @@ function VideoRoom(){
         color: "red",
         class: "fa-solid fa-microphone-slash fa-2xl"
     });
-    const [roomTopic, setRoomTopic] = React.useState("");
-    const [creatorUsername, setCreatorUsername] = React.useState("");
-    const [message, setMessage] = React.useState("");
-    const [messagesElements ,setMessagesElements] = React.useState([]);
-    const [dummy, reRender] = React.useState(0);
+
+    React.useEffect(()=>{
+    
+        socket.on("producerTransportCreated", async (data)=>{
+    
+            device = new mediasoupClient.Device();
+            try {
+                await device.load({ routerRtpCapabilities: data.rtpCapabilities });
+            } catch (error) {
+                console.error("Error loading device:", error);
+                return;
+            }
+            
+            producerTransport = device.createSendTransport(data);
+    
+            producerTransport.on('connect', ({ dtlsParameters }, callback) => {
+                socket.emit('connectProducerTransport', { dtlsParameters , roomID: data.roomID, username: user.username} );
+                callback();
+            });
+    
+            producerTransport.on("produce", (parameters , callback)=>{
+                socket.emit('produce', {roomID: data.roomID, username: user.username, kind: parameters.kind, rtpParameters: parameters.rtpParameters });
+                callback({id: producerTransport.id});
+            });
+    
+            // Create video producer
+            const videoTrack = localStream.getVideoTracks()[0];
+            videoProducer = await producerTransport.produce({ track: videoTrack });
+    
+            // Create audio producer
+            const audioTrack = localStream.getAudioTracks()[0];
+            audioProducer = await producerTransport.produce({ track: audioTrack });
+    
+        })
+    
+        socket.on("receiverTransportCreated", async (data)=>{
+    
+            if(!device.loaded){
+                await device.load({ routerRtpCapabilities: data.rtpCapabilities });
+                receiverTransport = device.createRecvTransport(data);
+            }else{
+                receiverTransport = device.createRecvTransport(data);
+            }
+            
+            receiverTransport.on("connect", ({ dtlsParameters }, callback) => {
+                socket.emit('connectConsumerTransport', { dtlsParameters , roomID: data.roomID, username: user.username} );
+                callback();
+            });
+            
+            socket.emit("newUserJoined", {
+                username: user.username,
+                roomID: data.roomID,
+                rtpCapabilities: device.rtpCapabilities,
+            })
+        })
+        
+        socket.on("newProducer", async (body)=>{
+    
+            const {username,producerID ,kind} = body;
+            
+            socket.emit("createConsumer", {
+                roomID: currentRoomID,
+                producerUsername: username,
+                rtpCapabilities: device.rtpCapabilities,
+                kind: kind,
+                producerID: producerID,
+                username: user.username
+            })
+        })
+    
+        socket.on("newConsumer", async (body)=>{
+    
+            const {consumerId,producerId,kind,rtpParameters,producerUsername, producerClientId} = body;
+    
+            const consumer = await receiverTransport.consume({
+                id: consumerId,
+                producerId: producerId,
+                kind: kind,
+                rtpParameters: rtpParameters,
+            });
+    
+            if(!remoteStreams[`${producerUsername}`] || remoteStreams[`${producerUsername}`].getTracks().length == 2){
+                remoteStreams[`${producerUsername}`] = new MediaStream();
+                remoteStreams[`${producerUsername}`].addTrack(consumer.track);
+                refresh();
+            }else{
+                remoteStreams[`${producerUsername}`].addTrack(consumer.track);
+                refresh();
+            }
+        })
+
+        socket.on("producerDisconnected", (body)=>{
+            const {producerUsername} = body;
+    
+            if(producerUsername === creatorUsername){
+                document.getElementById(`remote-${producerUsername}`).style = "display: none";
+            }
+    
+            delete remoteStreams[`${producerUsername}`];
+            
+            deleteInRoomUser(producerUsername);
+            refresh();
+        })
+
+
+        return ()=>{
+            socket.off("producerTransportCreated");
+            socket.off("receiverTransportCreated");
+            socket.off("newProducer");
+            socket.off("newConsumer");
+            socket.off("producerDisconnected");
+        }
+
+    }, [])
 
     React.useEffect(()=>{
 
         const begin = async ()=>{
-
-            socket.emit("getRoomData" , {roomID: currentRoomID});
 
             localStream = await navigator.mediaDevices.getUserMedia({
                 video: true,
@@ -88,7 +170,7 @@ function VideoRoom(){
             });
             localStream.getAudioTracks()[0].enabled = false;
             localStream.getVideoTracks()[0].enabled = false;
-            reRender((prev) => prev + 1);
+            refresh();
 
             socket.emit("createProducerTransport", {
                 roomID: currentRoomID,
@@ -122,141 +204,8 @@ function VideoRoom(){
 
     }, [dummy, localVideoRef.current]);
 
-    socket.on("gotRoomData", (body)=>{
-        const {topic, creatorUsername, roomMembers} = body;
-        inRoomUsers = {...roomMembers};
-        setRoomTopic(topic);
-        setCreatorUsername(creatorUsername);
-    });
 
-    socket.on("producerTransportCreated", async (data)=>{
-
-        device = new mediasoupClient.Device();
-        try {
-            await device.load({ routerRtpCapabilities: data.rtpCapabilities });
-        } catch (error) {
-            console.error("Error loading device:", error);
-            return;
-        }
-        
-        producerTransport = device.createSendTransport(data);
-
-        producerTransport.on('connect', ({ dtlsParameters }, callback) => {
-            socket.emit('connectProducerTransport', { dtlsParameters , roomID: data.roomID, username: user.username} );
-            callback();
-        });
-
-        producerTransport.on("produce", (parameters , callback)=>{
-            socket.emit('produce', {roomID: data.roomID, username: user.username, kind: parameters.kind, rtpParameters: parameters.rtpParameters });
-            callback({id: producerTransport.id});
-        });
-
-        // Create video producer
-        const videoTrack = localStream.getVideoTracks()[0];
-        videoProducer = await producerTransport.produce({ track: videoTrack });
-
-        // Create audio producer
-        const audioTrack = localStream.getAudioTracks()[0];
-        audioProducer = await producerTransport.produce({ track: audioTrack });
-
-    })
-
-    socket.on("receiverTransportCreated", async (data)=>{
-
-        if(!device.loaded){
-            await device.load({ routerRtpCapabilities: data.rtpCapabilities });
-            receiverTransport = device.createRecvTransport(data);
-        }else{
-            receiverTransport = device.createRecvTransport(data);
-        }
-        
-        receiverTransport.on("connect", ({ dtlsParameters }, callback) => {
-            socket.emit('connectConsumerTransport', { dtlsParameters , roomID: data.roomID, username: user.username} );
-            callback();
-        });
-        
-        socket.emit("newUserJoined", {
-            username: user.username,
-            roomID: data.roomID,
-            rtpCapabilities: device.rtpCapabilities,
-        })
-    })
     
-    socket.on("newProducer", async (body)=>{
-
-        const {username,producerID ,kind} = body;
-        
-        socket.emit("createConsumer", {
-            roomID: currentRoomID,
-            producerUsername: username,
-            rtpCapabilities: device.rtpCapabilities,
-            kind: kind,
-            producerID: producerID,
-            username: user.username
-        })
-    })
-
-    socket.on("newConsumer", async (body)=>{
-
-        const {consumerId,producerId,kind,rtpParameters,producerUsername, producerClientId} = body;
-
-        const consumer = await receiverTransport.consume({
-            id: consumerId,
-            producerId: producerId,
-            kind: kind,
-            rtpParameters: rtpParameters,
-        });
-
-        if(!remoteStreams[`${producerUsername}`] || remoteStreams[`${producerUsername}`].getTracks().length == 2){
-            remoteStreams[`${producerUsername}`] = new MediaStream();
-            remoteStreams[`${producerUsername}`].addTrack(consumer.track);
-            reRender((prev) => prev + 1);
-        }else{
-            remoteStreams[`${producerUsername}`].addTrack(consumer.track);
-            reRender((prev) => prev + 1);
-        }
-    })
-
-    socket.on("roomEnded", async ()=>{
-        window.location.href = `/client/options`;
-    })
-
-    socket.on("producerDisconnected", (body)=>{
-        const {producerUsername} = body;
-
-        if(producerUsername === creatorUsername){
-            document.getElementById(`remote-${producerUsername}`).style = "display: none";
-        }
-
-        delete remoteStreams[`${producerUsername}`];
-        delete inRoomUsers[`${producerUsername}`];
-
-        reRender((prev) => prev + 1);
-    })
-
-    socket.on("userKicked" , (body)=>{ 
-        window.location.href = `/client/options`;
-    });
-
-    socket.on("getUsername", (body)=>{
-        socket.emit("gotUsername", {username: user.username , roomID: currentRoomID});
-    });
-
-    socket.on("newMember", (body)=>{
-        const {username, id} = body;
-
-        inRoomUsers[`${username}`] = id;
-    });
-
-    socket.on("gotUsersWaiting", (body)=>{
-        waitingUsers = {...body};
-        reRender((prev) => prev + 1);
-    })
-
-    socket.on("mustWait", (body)=>{
-        window.location.href = `/waiting/${currentRoomID}`;
-    });
-
     function videoControl(event){
         event.preventDefault();
         if(videoProducer.paused){
@@ -291,86 +240,19 @@ function VideoRoom(){
         }
     }
 
-    function endRoom(event){
-        socket.emit("endRoom", {roomID:currentRoomID, roomType: roomType});
-    }
 
-    function leaveRoom(event){
-        window.location.href = `/client/options`;
-    }
+    // async function test(){
 
-    function kickUser(args , event){
-        event.preventDefault();
-        const usernameToKick = args[0];
-        socket.emit("kickClient" , { usernameToKick , roomID: currentRoomID , clientId: inRoomUsers[`${usernameToKick}`]});
-    }
+    //     // console.log(remoteStreams);
+    //     socket.emit("test", {
+    //         roomID: currentRoomID,
+    //         username: "qq"
+    //     })
+    // }
 
-    function acceptUser(args , event){
-        event.preventDefault();
-
-        const username = args[0];
-        const userId = waitingUsers[`${username}`][`id`];
-
-        socket.emit("acceptUser" , {roomID:currentRoomID , roomType: roomType , acceptedUsername: username  , acceptedId: userId});
-    }
-    
-    function rejectUser(args , event){
-        event.preventDefault();
-        
-        const username = args[0];
-        const userId = waitingUsers[`${username}`][`id`];
-
-        socket.emit("rejectUser" , {roomID:currentRoomID , rejectedUsername: username  , rejectedId: userId});
-    }
-
-    function sendMessage(event){
-        event.preventDefault();
-        if(message.trim().length > 0){
-            setMessage("");
-            socket.emit("sendMessage" , {roomID: currentRoomID, username: user.username , message: message});
-        }
-    }
-
-    function onMessageChange(event){
-        const message = event.target.value;
-        setMessage(message);
-    }
-
-    socket.on("gotMessage" , (body)=>{
-        const {username , message} = body;
-        const key = messagesElements.length + 1;
-        if(username !== user.username){
-            setMessagesElements((prev)=>{
-                return (
-                    [...prev, <Message key={key} message={message} username={username}></Message>]
-                )
-            });
-        }else{
-            // this is your message
-            setMessagesElements((prev)=>{
-                return (
-                    [...prev, <Message key={key} message={message}></Message>]
-                )
-            });
-        }
-    });
-
-
-
-    async function test(){
-
-        // console.log(remoteStreams);
-        socket.emit("test", {
-            roomID: currentRoomID,
-            username: "qq"
-        })
-    }
-
-    socket.on("test", (body)=>{
-        console.log(body.room);
-    })
-
-
+    // socket.on("test", (body)=>{
+    //     console.log(body.room);
+    // })
 
 
     if(creatorUsername === user.username){
@@ -538,12 +420,6 @@ function VideoRoom(){
                             <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: videoIconParams.color}} className={videoIconParams.class}></i></button>
                             <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: audioIconParams.color}} className={audioIconParams.class}></i></button>
                             {/* <button onClick={test} className="btn btn-dark">test</button> */}
-                            
-                            
-                            
-                            
-                            
-                            
                             <button onClick={leaveRoom} className="btn btn-danger m-3 ms-auto">Leave Room</button>
                         </div>
                     

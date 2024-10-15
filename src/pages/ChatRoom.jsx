@@ -1,71 +1,42 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import Cookies from "universal-cookie";
-import { jwtDecode } from "jwt-decode";
-import { useParams } from 'react-router-dom';
-import io from "socket.io-client";
-import * as mediasoupClient from "mediasoup-client";
-import {
-    types,
-    version,
-    Device,
-    detectDevice,
-    parseScalabilityMode,
-    debug
-} from "mediasoup-client";
+import { useSocket } from "../utils/SocketContex";
+import BasicRoomFunctionalities from "../utils/BasicRoomFunc";
 
-let waitingUsers = {};
-let inRoomUsers={};
-
-function Message({message , username}){
-    if(username){
-        return (
-            <div className="p-2 align-self-start" style={{maxWidth: "250px"}}>
-                <div className="text-bold text-warning">{username}</div>
-                <div className="d-flex flex-column align-items-start rounded p-1 bg-secondary" style={{ height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
-                    <div className="mx-2">{message}</div>
-                </div>
-            </div>
-        )
-    }else{
-        return (
-            <div className="p-2 align-self-end" style={{maxWidth: "250px"}}>
-                <div className="d-flex flex-column align-items-start rounded p-1 bg-success" style={{height:"auto" ,width:"auto", textAlign:"start" , wordBreak: "break-word"}}>
-                    <div className="mx-2">{message}</div>
-                </div>
-            </div>
-        )
-    }
-}
 
 function ChatRoom(){
 
-    const navigate = useNavigate();
-    const cookies = new Cookies();
-    const token = cookies.get("access_token");
-    const user = jwtDecode(token);
-    const {currentRoomID} = useParams();
-    const roomType = "Chat";
-    const socket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
-        {
-            extraHeaders: {
-                'Authorization': `Bearer ${token}`
-            }
-        }
-    );
-
-    const [roomTopic, setRoomTopic] = React.useState("");
-    const [creatorUsername, setCreatorUsername] = React.useState("");
-    const [message, setMessage] = React.useState("");
-    const [messagesElements ,setMessagesElements] = React.useState([]);
-    const [dummy, reRender] = React.useState(0);
+    const socket = useSocket();
+    const {
+        user,
+        currentRoomID,
+        waitingUsers,
+        inRoomUsers,
+        roomTopic,
+        creatorUsername, 
+        message,
+        messagesElements,
+        endRoom,
+        leaveRoom,
+        kickUser,
+        acceptUser,
+        rejectUser, 
+        sendMessage,
+        onMessageChange,
+        deleteInRoomUser,
+        refresh
+    } = BasicRoomFunctionalities(socket , "Chat");
 
     React.useEffect(()=>{
 
-        const begin = async ()=>{
-            socket.emit("getRoomData" , {roomID: currentRoomID, username: user.username});
+        socket.on("userLeftChat", (body)=>{
+            const {username} = body;
+            deleteInRoomUser(username);
+            refresh();
+        })
+
+        return ()=>{
+            socket.off("userLeftChat");
         }
-        begin();
 
     }, [])
 
@@ -79,127 +50,20 @@ function ChatRoom(){
 
     }, [socket]);
 
-    socket.on("userLeftChat", (body)=>{
-        const {username} = body;
-        delete inRoomUsers[`${username}`];
-        reRender((prev) => prev + 1);
-    })
-
-    socket.on("gotRoomData", (body)=>{
-        const {topic, creatorUsername, roomMembers} = body;
-        inRoomUsers = {...roomMembers};
-        setRoomTopic(topic);
-        setCreatorUsername(creatorUsername);
-    });
-
-    socket.on("roomEnded", async ()=>{
-        window.location.href = `/client/options`;
-    })
-
-    socket.on("userKicked" , (body)=>{ 
-        window.location.href = `/client/options`;
-    });
-
-    socket.on("getUsername", (body)=>{
-        socket.emit("gotUsername", {username: user.username , roomID: currentRoomID});
-    });
-
-    socket.on("newMember", (body)=>{
-        const {username, id} = body;
-
-        inRoomUsers[`${username}`] = id;
-
-        reRender((prev) => prev + 1);
-    });
-
-    socket.on("gotUsersWaiting", (body)=>{
-        waitingUsers = {...body};
-        reRender((prev) => prev + 1);
-    })
-
-    socket.on("mustWait", (body)=>{
-        window.location.href = `/waiting/${currentRoomID}`;
-    });
-
-    function endRoom(event){
-        socket.emit("endRoom", {roomID:currentRoomID, roomType: roomType});
-    }
-
-    function leaveRoom(event){
-        window.location.href = `/client/options`;
-    }
-
-    function kickUser(args , event){
-        event.preventDefault();
-        const usernameToKick = args[0];
-        socket.emit("kickClient" , { usernameToKick , roomID: currentRoomID , clientId: inRoomUsers[`${usernameToKick}`]});
-    }
-
-    function acceptUser(args , event){
-        event.preventDefault();
-
-        const username = args[0];
-        const userId = waitingUsers[`${username}`][`id`];
-
-        socket.emit("acceptUser" , {roomID:currentRoomID , roomType: roomType ,acceptedUsername: username  , acceptedId: userId});
-    }
-    
-    function rejectUser(args , event){
-        event.preventDefault();
-        
-        const username = args[0];
-        const userId = waitingUsers[`${username}`][`id`];
-
-        socket.emit("rejectUser" , {roomID:currentRoomID , rejectedUsername: username  , rejectedId: userId});
-    }
-
-    function sendMessage(event){
-        event.preventDefault();
-        if(message.trim().length > 0){
-            setMessage("");
-            socket.emit("sendMessage" , {roomID: currentRoomID, username: user.username , message: message});
-        }
-    }
-
-    function onMessageChange(event){
-        const message = event.target.value;
-        setMessage(message);
-    }
-
-    socket.on("gotMessage" , (body)=>{
-        const {username , message} = body;
-        const key = messagesElements.length + 1;
-        if(username !== user.username){
-            setMessagesElements((prev)=>{
-                return (
-                    [...prev, <Message key={key} message={message} username={username}></Message>]
-                )
-            });
-        }else{
-            // this is your message
-            setMessagesElements((prev)=>{
-                return (
-                    [...prev, <Message key={key} message={message}></Message>]
-                )
-            });
-        }
-    });
 
 
+    // async function test(){
 
+    //     // console.log(remoteStreams);
+    //     socket.emit("test", {
+    //         roomID: currentRoomID,
+    //         username: "qq"
+    //     })
+    // }
 
-    async function test(){
-
-        // console.log(remoteStreams);
-        socket.emit("test", {
-            roomID: currentRoomID,
-            username: "qq"
-        })
-    }
-
-    socket.on("test", (body)=>{
-        console.log(body.room);
-    })
+    // socket.on("test", (body)=>{
+    //     console.log(body.room);
+    // })
 
     if(creatorUsername === user.username){
         return (

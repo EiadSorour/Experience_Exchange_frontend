@@ -22,7 +22,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />}/>
         <Route path="/login" element={<LoginPage />}/>
         
-        <Route element={<PrivateRoutes/> }>
+        <Route element={ <SocketProvider> <PrivateRoutes/> </SocketProvider>  }>
             <Route path="/client/options" element={<ClientOptionsPage />}/>
             <Route path="/room/Video/:currentRoomID" element={<VideoRoom />}/>
             <Route path="/room/Chat/:currentRoomID" element={<ChatRoom />}/>
