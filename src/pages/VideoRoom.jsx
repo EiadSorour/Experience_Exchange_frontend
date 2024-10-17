@@ -2,6 +2,12 @@ import React from "react";
 import * as mediasoupClient from "mediasoup-client";
 import { useSocket } from "../utils/SocketContex";
 import BasicRoomFunctionalities from "../utils/BasicRoomFunc";
+import RoomSideBar from "../components/RoomSideBar";
+import InRoomUsers from "../components/InRoomUsers";
+import WaitingList from "../components/WaitingList";
+import RoomMiddle from "../components/RoomMiddle";
+import RoomMiddleDown from "../components/RoomMiddleDown";
+import RoomMiddleTop from "../components/RoomMiddleTop";
 
 let localStream;
 let device;
@@ -13,6 +19,7 @@ let remoteStreams = {};
 
 function VideoRoom(){
 
+    const roomType = "Video";
     const socket = useSocket();
     const {
         user,
@@ -33,7 +40,7 @@ function VideoRoom(){
         onMessageChange,
         deleteInRoomUser,
         refresh
-    } = BasicRoomFunctionalities(socket , "Video");
+    } = BasicRoomFunctionalities(socket , roomType);
 
 
     const localVideoRef = React.useRef(null);
@@ -254,180 +261,43 @@ function VideoRoom(){
     //     console.log(body.room);
     // })
 
+    return (
+        <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
+            <RoomSideBar>
+                <WaitingList isCreator={creatorUsername === user.username} waitingUsers={waitingUsers} acceptUser={acceptUser} rejectUser={rejectUser}/>
+                <hr className="m-1 mt-4"/>
+                <InRoomUsers isCreator={creatorUsername === user.username} user={user} inRoomUsers={inRoomUsers} kickUser={kickUser}/>
+            </RoomSideBar>
 
-    if(creatorUsername === user.username){
-        return (
-            <div>
-                <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
-                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll", scrollbarWidth: "thin"}}>
-                        <h4 className="mt-4 text-info">Waiting</h4>
-                        {Object.keys(waitingUsers).map((username)=>{
-                            if(waitingUsers[`${username}`]['accepted'] == false){
-                                return (
-                                    <div className="d-flex justify-content-center align-items-baseline m-2">
-                                        <h6>{username}</h6>
-                                        <button onClick={ acceptUser.bind(this , [username]) } className="btn btn-sm ms-1 btn-dark"><i style={{color: "green"}} className="fa-solid fa-circle-check fa-lg"></i></button>
-                                        <button onClick={ rejectUser.bind(this , [username]) }  className="btn btn-sm btn-dark"><i style={{color: "red"}} className="fa-solid fa-circle-xmark fa-lg"></i></button>
-                                    </div>
-                                )
-                            }
-                        })}
-                        <hr className="m-1 mt-4"/>
-                        <h4 className="mt-4 text-info">In Room</h4>
-                        {Object.keys(inRoomUsers).map((username)=>{
-                            if(username != user.username){
-                                return(
-                                    <div className="d-flex justify-content-center align-items-baseline m-3">
-                                        <h6>{username}</h6>
-                                        <button onClick={ kickUser.bind(this , [username]) } className="btn btn-danger ms-3">Kick</button>
-                                    </div>
-                                )
-                            }
-                        })}
-                        
-                    </div>
-    
-                    <div style={{width:"100%" , height:"100vh"}}>
-                        
-                        <div className="text-center" style={{height:"85vh"}}>
-                            <h1 className="pt-2"><span className="text-info">Topic:</span> {roomTopic}</h1>
-                            
-                            <div className="d-flex flex-row">
-                                <div className="d-flex flex-column me-auto flex-wrap justify-content-center">
-                                    <div className="m-3">
-                                        <h5 className="text-secondary">{user.username}</h5>
-                                        <video ref={localVideoRef} id="localVideo" style={{width:"400px" , height:"220px"}} autoPlay></video>
-                                    </div>
-                                    <div id="videos" className="d-flex flex-wrap justify-content-center">
-                                        {Object.keys(remoteStreams).map((key)=>{
-                                            return (
-                                                <div className="m-1">
-                                                    <h5 className="text-secondary">{key}</h5>
-                                                    <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="me-2" style={{borderLeft: "1px solid #adb5bd"}}></div>
-                                <div style={{minWidth: "400px"}}>
-
-
-
-                                    <div className="d-flex text-start flex-column" style={{overflow: "auto" , height: "60vh", scrollbarWidth: "none"}}>
-                                        {messagesElements}
-                                    </div>
-                                    <div className="d-flex flex-row mt-5">
-                                        <textarea onChange={onMessageChange} value={message} style={{minWidth: "80px", resize: "none", scrollbarWidth: "none"}} type="text" class="form-control" placeholder="message"/>
-                                        <button onClick={sendMessage} className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-paper-plane fa-xl"></i></button>
-                                    </div>
-
-
-
-                                </div>
-                            </div>
-                        </div>
-                        <hr/>
-                        <div className="d-flex text-center" style={{height:"10vh"}}>
-                            <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: videoIconParams.color}} className={videoIconParams.class}></i></button>
-                            <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: audioIconParams.color}} className={audioIconParams.class}></i></button>
-                            {/* <button onClick={test} className="btn btn-dark">test</button> */}
-                            <button onClick={endRoom} className="btn btn-danger m-3 ms-auto">End Room</button>
-                        </div>
-                    
-                    </div>
-                </div>
-            </div>
-        )
-    }else{
-        return (
-            <div>
-                <div class="d-flex align-items-stretch" style={{minHeight: "100vh"}}>
-                    <div className="text-center" style={{width:"30%" , height:"100vh" , overflowY:"scroll", scrollbarWidth: "thin"}}>
-                        <h4 className="mt-4 text-info">Waiting</h4>
-                        {Object.keys(waitingUsers).map((username)=>{
-                            if(waitingUsers[`${username}`]['accepted'] == false){
-                                return (
-                                    <div className="d-flex justify-content-center align-items-baseline m-2">
-                                        <h6>{username}</h6>
-                                    </div>
-                                )
-                            }
-                        })} 
-                        <hr className="m-1 mt-4"/>
-                        <h4 className="mt-4 text-info">In Room</h4>
-                        {Object.keys(inRoomUsers).map((username)=>{
-                            if(username != user.username){
-                                return(
-                                    <div className="d-flex justify-content-center align-items-baseline m-3">
-                                        <h6>{username}</h6>
-                                    </div>
-                                )
-                            }
-                        })}
-                    </div>
-    
-                    <div style={{width:"100%" , height:"100vh"}}>
-                        
-                        <div className="text-center" style={{height:"85vh"}}>
-                            <h1 className="pt-2"><span className="text-info">Topic:</span> {roomTopic}</h1>
-                            <div className="d-flex flex-row">
-                                <div className="d-flex flex-column me-auto flex-wrap justify-content-center">
-                                    {remoteStreams[`${creatorUsername}`] ? 
-                                        <div className="m-3">
-                                            <h5 className="text-secondary">{creatorUsername}</h5>
-                                            <video id={`remote-${creatorUsername}`} style={{width:"400px" , height:"220px"}} autoPlay></video>
-                                        </div>
-                                    : <></>}
-                                    <div id="videos" className="d-flex flex-wrap justify-content-center">
-                                        <div className="m-1">
-                                            <h5 className="text-secondary">{user.username}</h5>
-                                            <video ref={localVideoRef} id="localVideo" style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                        </div>
-                                        {Object.keys(remoteStreams).map((key)=>{
-                                            if(key !== creatorUsername){
-                                                return (
-                                                    <div className="m-1">
-                                                        <h5 className="text-secondary">{key}</h5>
-                                                        <video id={`remote-${key}`} style={{width:"50px" , height:"50px"}} autoPlay></video>
-                                                    </div>
-                                                )
-                                            }
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="me-2" style={{borderLeft: "1px solid #adb5bd"}}></div>
-                                <div style={{minWidth: "400px"}}>
-
-
-
-                                    <div className="d-flex text-start flex-column" style={{overflow: "auto" , height: "60vh", scrollbarWidth: "none"}}>
-                                        {messagesElements}
-                                    </div>
-                                    <div className="d-flex flex-row mt-5">
-                                        <textarea onChange={onMessageChange} value={message} style={{minWidth: "80px", resize: "none", scrollbarWidth: "none"}} type="text" class="form-control" placeholder="message"/>
-                                        <button onClick={sendMessage} className="btn btn-dark"><i style={{color: "#3776e1"}} className="fa-solid fa-paper-plane fa-xl"></i></button>
-                                    </div>
-
-
-                                </div>
-                            </div>
-                        </div>
-                        <hr/>
-                        <div className="d-flex text-center" style={{height:"10vh"}}>
-                            <button onClick={videoControl} className="btn btn-dark"><i id="videoIcon" style={{color: videoIconParams.color}} className={videoIconParams.class}></i></button>
-                            <button onClick={audioControl} className="btn btn-dark"><i id="audioIcon" style={{color: audioIconParams.color}} className={audioIconParams.class}></i></button>
-                            {/* <button onClick={test} className="btn btn-dark">test</button> */}
-                            <button onClick={leaveRoom} className="btn btn-danger m-3 ms-auto">Leave Room</button>
-                        </div>
-                    
-                    </div>
-                </div>
-            </div>
-        )
-    }
+            <RoomMiddle>
+                
+                <RoomMiddleTop
+                    creatorUsername = {creatorUsername}
+                    roomTopic = {roomTopic} 
+                    messagesElements = {messagesElements}
+                    user = {user}
+                    localVideoRef = {localVideoRef} 
+                    roomType = {roomType}
+                    message = {message}
+                    remoteStreams = {remoteStreams}
+                    onMessageChange = {onMessageChange}
+                    sendMessage = {sendMessage}>
+                </RoomMiddleTop>
+                <hr/>
+                <RoomMiddleDown 
+                    isCreator = {creatorUsername === user.username}
+                    endRoom = {endRoom}
+                    leaveRoom = {leaveRoom} 
+                    videoControl = {videoControl}
+                    audioControl = {audioControl}
+                    videoIconParams = {videoIconParams}
+                    audioIconParams = {audioIconParams}
+                    roomType = {roomType}>
+                </RoomMiddleDown>
+            
+            </RoomMiddle>
+        </div>
+    )
 }
 
 export default VideoRoom;
