@@ -125,7 +125,7 @@ function RegisterPage(){
         if(userData.password === userData.confirmPassword){
             const url = process.env.REACT_APP_BACK_URL+"/register";
             try{
-                const response = await axios.post(url, userData, {withCredentials:true});
+                const response = await axios.post(url, userData, {withCredentials:true , });
                 const accessToken = response.data.data.accessToken;
                 cookies.set("access_token", accessToken);
                 

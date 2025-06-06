@@ -15,6 +15,8 @@ export const SocketProvider = ({ children }) => {
         const cookies = new Cookies();
         const token = cookies.get("access_token");
         const user = jwtDecode(token);
+
+        console.log(`4 connecting to ${process.env.REACT_APP_GATEWAY_SOCKET_URL}`);
         const newSocket = io(process.env.REACT_APP_GATEWAY_SOCKET_URL + "/rooms" , 
             {
                 extraHeaders: {
@@ -22,6 +24,7 @@ export const SocketProvider = ({ children }) => {
                 }
             }
         );
+        console.log(`5 connected to ${process.env.REACT_APP_GATEWAY_SOCKET_URL} !!!`);
 
         setSocket(newSocket);
 

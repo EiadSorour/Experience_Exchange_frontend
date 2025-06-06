@@ -9,11 +9,16 @@ var chatRoomsOnly = false;
 
 function ClientOptionsPage(){
 
+    alert("i am here");
+
     const cookies = new Cookies();
     const navigate = useNavigate();
     const token = cookies.get("access_token");
     const user = jwtDecode(token);
     const socket = useSocket();
+
+    console.log("this is socket: ");
+    console.log(socket);
 
     const [availableRooms , setAvailableRooms] = React.useState();
     const [creatingRoom , setCreatingRoom] = React.useState(false);

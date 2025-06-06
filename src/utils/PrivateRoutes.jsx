@@ -12,7 +12,14 @@ const PrivateRoutes = () => {
     useEffect(() => {
         const authenticateUser = async () => {
             try {
+                console.log("2 Starting authenticated one");
+                console.log(`3 sending GET request to ${process.env.REACT_APP_BACK_URL}/authenticated with credentials`);
+
                 const response = await axios.get(process.env.REACT_APP_BACK_URL + "/authenticated", { withCredentials: true });
+                
+                console.log("Authenticated 1 done");
+                console.log(`role : ${response.data.data.role}`);
+                
                 const role = response.data.data.role;
                 if (role === "client") {
                     setIsClient(true);
@@ -56,13 +63,16 @@ const PrivateRoutes = () => {
     }
 
     if (!isAuthenticated) {
+        console.log("Redirect to login not authenticated");
         return <Navigate to="/login" />;
     }
 
     if (isAuthenticated && isClient) {
+        console.log("Go to child !");
         return <Outlet />;
     }
 
+    console.log("Redirect to login");
     return <Navigate to="/login" />;
 };
 
