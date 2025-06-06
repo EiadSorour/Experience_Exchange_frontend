@@ -9,8 +9,6 @@ var chatRoomsOnly = false;
 
 function ClientOptionsPage(){
 
-    alert("i am here");
-
     const cookies = new Cookies();
     const navigate = useNavigate();
     const token = cookies.get("access_token");

@@ -25,7 +25,7 @@ const PrivateAdminRoutes = () => {
                     try {
                         const tokenResponse = await axios.get(process.env.REACT_APP_BACK_URL + "/refresh", { withCredentials: true });
                         const newAccessToken = tokenResponse.data.data.newAccessToken;
-                        cookies.set("access_token", newAccessToken, { path: '/'});
+                        cookies.set("access_token", newAccessToken, { secure: true , sameSite: "none", path: '/', domain: "up.railway.app"});
 
                         const retryResponse = await axios.get(process.env.REACT_APP_BACK_URL + "/authenticated", { withCredentials: true });
                         const role = retryResponse.data.data.role;

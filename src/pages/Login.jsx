@@ -67,7 +67,7 @@ function LoginPage(){
         try{
             const response = await axios.post(url, userData, {withCredentials:true});
             const accessToken = response.data.data.accessToken;
-            cookies.set("access_token", accessToken);
+            cookies.set("access_token", accessToken , {secure: true , sameSite: "none" , domain: "up.railway.app"});
             
             const userInfo = jwtDecode(accessToken);
 
